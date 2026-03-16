@@ -1,6 +1,6 @@
 {
   "version": "2.0",
-  "lastSaved": "2026-03-16T09:52:02.401Z",
+  "lastSaved": "2026-03-16T18:02:40.122Z",
   "members": [
     {
       "lastName": "ΠΑΠΑΔΟΠΟΥΛΟΣ",
@@ -38,7 +38,8 @@
       "amount": 35,
       "paidDate": "2026-03-16",
       "notes": "",
-      "createdAt": "2026-03-16T08:44:04.546Z"
+      "createdAt": "2026-03-16T08:44:04.546Z",
+      "receiptId": "74b1d06d-889c-44ef-acb5-1c98c03f2a0d"
     },
     {
       "id": "f92cf1cb-309d-450b-b6da-94eee2ad18de",
@@ -48,7 +49,8 @@
       "amount": 35,
       "paidDate": "2026-03-16",
       "notes": "",
-      "createdAt": "2026-03-16T08:44:42.610Z"
+      "createdAt": "2026-03-16T08:44:42.610Z",
+      "receiptId": "74b1d06d-889c-44ef-acb5-1c98c03f2a0d"
     },
     {
       "id": "3b0f813c-2552-43b4-a4ba-f9453af147ab",
@@ -58,7 +60,22 @@
       "amount": 35,
       "paidDate": "2026-03-16",
       "notes": "",
-      "createdAt": "2026-03-16T08:44:45.634Z"
+      "createdAt": "2026-03-16T08:44:45.634Z",
+      "receiptId": "74b1d06d-889c-44ef-acb5-1c98c03f2a0d"
+    }
+  ],
+  "receipts": [
+    {
+      "id": "74b1d06d-889c-44ef-acb5-1c98c03f2a0d",
+      "receiptNumber": 1,
+      "year": 2026,
+      "memberId": "8eebe8fa-23c3-4bc6-a260-e38180d9f58c",
+      "amount": 105,
+      "paidDate": "2026-03-16",
+      "notes": "",
+      "status": "active",
+      "cancelledAt": null,
+      "createdAt": "2026-03-16T08:44:04.546Z"
     }
   ],
   "config": {
@@ -80,6 +97,22 @@
         "label": "Επίτιμο Μέλος",
         "fee": 0
       }
+    ],
+    "dataVersion": 2,
+    "lastReceiptNumberByYear": {
+      "2026": 1
+    },
+    "activeMonths": [
+      9,
+      10,
+      11,
+      12,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
     ]
   }
 }
