@@ -908,21 +908,14 @@ const Views = {
 
   _reportReceipts() {
     const year = State.reportYear;
-    const receipts = Store.getReceipts();
-    const payments = Store.getPayments()
-      .filter(p => p.year === year)
-      .sort((a, b) => {
-        const ra = receipts.find(r => r.id === a.receiptId);
-        const rb = receipts.find(r => r.id === b.receiptId);
-        const rnA = ra ? ra.receiptNumber : (a.receiptNumber || 0);
-        const rnB = rb ? rb.receiptNumber : (b.receiptNumber || 0);
-        if (rnA !== rnB) return rnA - rnB;
-        const da = a.paidDate || a.createdAt || '';
-        const db = b.paidDate || b.createdAt || '';
-        return da.localeCompare(db);
-      });
+    const receipts = Store.getReceipts()
+      .filter(r => r.year === year)
+      .sort((a, b) => a.receiptNumber - b.receiptNumber);
+    const payments = Store.getPayments();
     const members = Store.getMembers();
-    const totalAmount = payments.reduce((s, p) => s + (p.amount || 0), 0);
+
+    const activeReceipts = receipts.filter(r => r.status === 'active');
+    const totalAmount = activeReceipts.reduce((s, r) => s + (r.amount || 0), 0);
 
     return `
       <div class="gap-row mb-2">
@@ -931,62 +924,52 @@ const Views = {
           <span class="year-display">${year}</span>
           <button onclick="State.reportYear++; renderView()">▸</button>
         </div>
-        <button class="btn btn-outline btn-sm no-print" onclick="exportReceiptsExcel(${year})">📥 Excel για Λογιστή</button>
-        <button class="btn btn-outline btn-sm no-print" onclick="window.print()">🖨️ Εκτύπωση</button>
+        <button class="btn btn-outline btn-sm no-print" onclick="exportReceiptsExcel(${year})">📥 Excel</button>
       </div>
 
-      <div class="alert alert-info mb-2">
-        📋 Αποδείξεις ${year}: <strong>${payments.length}</strong> πληρωμές — 
-        Μπλοκάκι: #1 – #${payments.length} — 
-        Σύνολο: <strong>${Utils.formatMoney(totalAmount)}</strong>
+      <div class="mb-1">
+        <span class="text-muted">Σύνολο ενεργών αποδείξεων:</span> <strong>${activeReceipts.length}</strong>
+        <span class="text-muted ml-2">—</span>
+        <strong class="money ml-1">${Utils.formatMoney(totalAmount)}</strong>
       </div>
 
-      ${payments.length === 0 ? `
-        <div class="empty-state">
-          <span class="empty-icon">🧾</span>
-          <h3>Δεν υπάρχουν αποδείξεις</h3>
-          <p>Δεν έχουν καταχωρηθεί πληρωμές για το ${year}</p>
-        </div>
+      ${receipts.length === 0 ? `
+        <div class="empty-state"><p class="text-muted">Δεν υπάρχουν αποδείξεις για το ${year}</p></div>
       ` : `
         <div class="table-wrap">
           <table>
             <thead>
               <tr>
                 <th>Αρ.</th>
-                <th>Ημ. Πληρωμής</th>
+                <th>Κατάσταση</th>
+                <th>Ημ/νία</th>
                 <th>Μέλος</th>
-                <th>Παιδί</th>
-                <th>Μήνας</th>
+                <th>Μήνες</th>
                 <th class="text-right">Ποσό</th>
                 <th class="text-center no-print">🧾</th>
               </tr>
             </thead>
             <tbody>
-              ${payments.map(p => {
-                const m = members.find(mm => mm.id === p.memberId);
-                const receipt = receipts.find(r => r.id === p.receiptId);
-                const rn = receipt ? receipt.receiptNumber : (p.receiptNumber || '?');
-                const isCancelled = receipt && receipt.status === 'cancelled';
-                return `<tr${isCancelled ? ' style="opacity:0.6"' : ''}>
-                  <td><span class="receipt-badge">#${rn}</span>${isCancelled ? ' <span class="badge badge-inactive" style="font-size:0.7rem">ΑΚΥΡΟ</span>' : ''}</td>
-                  <td${isCancelled ? ' style="text-decoration:line-through"' : ''}>${Utils.formatDate(p.paidDate)}</td>
-                  <td><strong>${m ? Utils.escapeHtml(Utils.getMemberFullName(m)) : 'Διαγραμμένο'}</strong></td>
-                  <td>${m ? Utils.escapeHtml(Utils.getChildFullName(m)) : ''}</td>
-                  <td>${Utils.getMonthName(p.month)}</td>
-                  <td class="text-right money"${isCancelled ? ' style="text-decoration:line-through"' : ''}>${Utils.formatMoney(p.amount)}</td>
+              ${receipts.map(r => {
+                const m = members.find(mm => mm.id === r.memberId);
+                const rPayments = payments.filter(p => p.receiptId === r.id);
+                const monthsList = rPayments.map(p => Utils.getMonthShort(p.month)).join(', ');
+                const isCancelled = r.status === 'cancelled';
+                return \`
+                <tr \${isCancelled ? 'style="opacity:0.5"' : ''}>
+                  <td><span class="receipt-badge">#\${r.receiptNumber}</span></td>
+                  <td>\${isCancelled ? '<span style="color:var(--danger)">ΑΚΥΡΟ</span>' : '<span style="color:var(--success)">Ενεργή</span>'}</td>
+                  <td>\${Utils.formatDate(r.paidDate)}</td>
+                  <td>\${m ? Utils.escapeHtml(Utils.getMemberFullName(m)) : '<em>Διαγραμμένο</em>'}</td>
+                  <td>\${monthsList} \${r.year}</td>
+                  <td class="text-right money">\${Utils.formatMoney(r.amount)}</td>
                   <td class="text-center no-print">
-                    ${receipt ? `<button class="btn btn-ghost btn-sm" onclick="showReceiptById('${receipt.id}')" title="Εκτύπωση απόδειξης">🧾</button>` : ''}
+                    <button class="btn btn-ghost btn-sm" onclick="showReceiptById('\${r.id}')">🧾</button>
+                    \${!isCancelled ? \`<button class="btn btn-ghost btn-sm" onclick="cancelReceipt('\${r.id}')">❌</button>\` : ''}
                   </td>
-                </tr>`;
+                </tr>\`;
               }).join('')}
             </tbody>
-            <tfoot>
-              <tr style="font-weight:700;background:var(--bg)">
-                <td colspan="5">Σύνολο (${payments.length} αποδείξεις)</td>
-                <td class="text-right money">${Utils.formatMoney(totalAmount)}</td>
-                <td></td>
-              </tr>
-            </tfoot>
           </table>
         </div>
       `}
