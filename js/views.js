@@ -1054,6 +1054,27 @@ const Views = {
         <button class="btn btn-primary mt-1" onclick="saveGeneralSettings()">💾 Αποθήκευση</button>
       </div>
 
+      <!-- Active Months -->
+      <div class="card settings-section">
+        <div class="card-header">
+          <h3>📅 Ενεργοί Μήνες Χρέωσης</h3>
+        </div>
+        <p class="text-muted mb-2" style="font-size:0.82rem">Επιλέξτε τους μήνες κατά τους οποίους γίνεται χρέωση εισφοράς</p>
+        <div class="month-check-grid">
+          ${MONTHS_SHORT.map((m, i) => {
+            const monthNum = i + 1;
+            const isActive = (config.activeMonths || [9,10,11,12,1,2,3,4,5,6]).includes(monthNum);
+            return \`
+              <label class="month-check-label">
+                <input type="checkbox" name="activeMonth" value="\${monthNum}" \${isActive ? 'checked' : ''}>
+                <span>\${m}</span>
+              </label>
+            \`;
+          }).join('')}
+        </div>
+        <button class="btn btn-primary mt-1" onclick="saveActiveMonths()">💾 Αποθήκευση</button>
+      </div>
+
       <!-- Categories -->
       <div class="card settings-section">
         <div class="card-header">
@@ -1107,6 +1128,10 @@ const Views = {
         <div class="alert alert-warning">
           ⚠️ Η επαναφορά θα αντικαταστήσει ΟΛΑ τα υπάρχοντα δεδομένα
         </div>
+        <div class="alert alert-warning mt-1" style="font-size:0.82rem">
+          🔒 Τα δεδομένα αποθηκεύονται χωρίς κρυπτογράφηση. Φυλάξτε το αρχείο σε ασφαλή τοποθεσία
+          και μην το μοιράζεστε χωρίς λόγο.
+        </div>
       </div>
 
       <!-- Export -->
@@ -1140,6 +1165,10 @@ const Views = {
         <div class="info-row">
           <span class="info-label">Πληρωμές:</span>
           <span class="info-value">${Store.getPayments().length}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Αποδείξεις:</span>
+          <span class="info-value">${Store.getReceipts().length} (${Store.getReceipts().filter(r => r.status === 'active').length} ενεργές)</span>
         </div>
       </div>
     `;

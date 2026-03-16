@@ -53,6 +53,15 @@ function deleteCategory(catId) {
   });
 }
 
+function saveActiveMonths() {
+  const config = Store.getConfig();
+  const checked = document.querySelectorAll('[name="activeMonth"]:checked');
+  config.activeMonths = Array.from(checked).map(cb => parseInt(cb.value));
+  Store.saveConfig(config);
+  showToast('Οι ενεργοί μήνες αποθηκεύτηκαν', 'success');
+  renderView();
+}
+
 function importBackup(file) {
   if (!file) return;
   Modals.confirm(
