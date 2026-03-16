@@ -1,0 +1,5 @@
+# Documentation (local only)
+docs/
+
+# Keep CLAUDE.md tracked
+!CLAUDE.md
