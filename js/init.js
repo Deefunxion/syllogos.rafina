@@ -77,6 +77,77 @@ function migrateDataV2() {
   console.log(`Migration v2 complete: ${receipts.length} receipts created from ${payments.length} payments`);
 }
 
+// ─── DATA MIGRATION V3 ──────────────────────────────
+function migrateDataV3() {
+  const config = Store.getConfig();
+  if (config.dataVersion && config.dataVersion >= 3) return;
+
+  // Initialize new collections
+  if (Store.getTransactions().length === 0) {
+    localStorage.setItem(LS_TRANSACTIONS, JSON.stringify([]));
+  }
+  if (Store.getAssets().length === 0) {
+    localStorage.setItem(LS_ASSETS, JSON.stringify([]));
+  }
+
+  // Initialize member numbers for existing members
+  const members = Store.getMembers();
+  if (!config.lastMemberNumber) config.lastMemberNumber = 0;
+
+  let needsMemberUpdate = false;
+  const sorted = [...members].sort((a, b) => (a.createdAt || '').localeCompare(b.createdAt || ''));
+  sorted.forEach(m => {
+    if (!m.memberNumber) {
+      config.lastMemberNumber++;
+      m.memberNumber = config.lastMemberNumber;
+      needsMemberUpdate = true;
+    }
+    if (m.afm === undefined) m.afm = '';
+    if (m.departureDate === undefined) m.departureDate = '';
+    if (m.departureReason === undefined) m.departureReason = '';
+  });
+
+  if (needsMemberUpdate) {
+    const numberMap = {};
+    sorted.forEach(m => { numberMap[m.id] = m.memberNumber; });
+    members.forEach(m => {
+      if (numberMap[m.id]) m.memberNumber = numberMap[m.id];
+      if (m.afm === undefined) m.afm = '';
+      if (m.departureDate === undefined) m.departureDate = '';
+      if (m.departureReason === undefined) m.departureReason = '';
+    });
+    Store.saveMembers(members);
+  }
+
+  // Initialize payment method on existing payments
+  const payments = Store.getPayments();
+  let needsPaymentUpdate = false;
+  payments.forEach(p => {
+    if (!p.paymentMethod) {
+      p.paymentMethod = 'cash';
+      needsPaymentUpdate = true;
+    }
+  });
+  if (needsPaymentUpdate) Store.savePayments(payments);
+
+  // Same for receipts
+  const receipts = Store.getReceipts();
+  let needsReceiptUpdate = false;
+  receipts.forEach(r => {
+    if (!r.paymentMethod) {
+      r.paymentMethod = 'cash';
+      needsReceiptUpdate = true;
+    }
+  });
+  if (needsReceiptUpdate) Store.saveReceipts(receipts);
+
+  // Update config
+  config.dataVersion = 3;
+  Store.saveConfig(config);
+
+  console.log(`Migration v3 complete: ${members.length} members updated, new collections initialized`);
+}
+
 // ─── INIT ─────────────────────────────────────────────
 async function init() {
   // Ensure config exists
@@ -84,6 +155,7 @@ async function init() {
 
   // Run data migration if needed
   migrateDataV2();
+  migrateDataV3();
 
   // Set club name in sidebar
   document.getElementById('sidebar-club-name').textContent = config.clubName;
@@ -97,8 +169,9 @@ async function init() {
   if (FileStorage.isSupported()) {
     const reconnected = await FileStorage.tryReconnect();
     if (reconnected) {
-      // Migrate if file data is v1
+      // Migrate if file data is older version
       migrateDataV2();
+      migrateDataV3();
       const cfg = Store.getConfig();
       document.getElementById('sidebar-club-name').textContent = cfg.clubName;
       State.currentYear = cfg.currentYear || new Date().getFullYear();

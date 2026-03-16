@@ -31,6 +31,14 @@ const Views = {
     const yearPayments = payments.filter(p => p.year === year);
     const yearTotal = yearPayments.reduce((s, p) => s + (p.amount || 0), 0);
 
+    // Income-Expense summary
+    const allTx = Store.getTransactions().filter(t => {
+      const d = new Date(t.date);
+      return d.getFullYear() === year && t.status !== 'cancelled';
+    });
+    const yearIncome = allTx.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+    const yearExpense = allTx.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+
     // Last 5 payments
     const recentPayments = [...payments].sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || '')).slice(0, 5);
     const receipts = Store.getReceipts();
@@ -74,6 +82,27 @@ const Views = {
           <div class="stat-info">
             <h4>Εισπράξεις Έτους</h4>
             <div class="stat-value money">${Utils.formatMoney(yearTotal)}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card mb-2">
+        <div class="card-header">
+          <h3><i class="fa-solid fa-book"></i> Οικονομική Εικόνα ${year}</h3>
+          <a href="#" onclick="navigate('transactions')" class="btn btn-outline btn-sm no-print">Βιβλίο Ε-Ε</a>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-label">Έσοδα</div>
+            <div class="stat-value" style="color:var(--success)">${Utils.formatMoney(yearIncome)}</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Έξοδα</div>
+            <div class="stat-value" style="color:var(--danger)">${Utils.formatMoney(yearExpense)}</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Υπόλοιπο</div>
+            <div class="stat-value">${Utils.formatMoney(yearIncome - yearExpense)}</div>
           </div>
         </div>
       </div>
