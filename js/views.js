@@ -955,19 +955,19 @@ const Views = {
                 const rPayments = payments.filter(p => p.receiptId === r.id);
                 const monthsList = rPayments.map(p => Utils.getMonthShort(p.month)).join(', ');
                 const isCancelled = r.status === 'cancelled';
-                return \`
-                <tr \${isCancelled ? 'style="opacity:0.5"' : ''}>
-                  <td><span class="receipt-badge">#\${r.receiptNumber}</span></td>
-                  <td>\${isCancelled ? '<span style="color:var(--danger)">ΑΚΥΡΟ</span>' : '<span style="color:var(--success)">Ενεργή</span>'}</td>
-                  <td>\${Utils.formatDate(r.paidDate)}</td>
-                  <td>\${m ? Utils.escapeHtml(Utils.getMemberFullName(m)) : '<em>Διαγραμμένο</em>'}</td>
-                  <td>\${monthsList} \${r.year}</td>
-                  <td class="text-right money">\${Utils.formatMoney(r.amount)}</td>
+                return `
+                <tr ${isCancelled ? 'style="opacity:0.5"' : ''}>
+                  <td><span class="receipt-badge">#${r.receiptNumber}</span></td>
+                  <td>${isCancelled ? '<span style="color:var(--danger)">ΑΚΥΡΟ</span>' : '<span style="color:var(--success)">Ενεργή</span>'}</td>
+                  <td>${Utils.formatDate(r.paidDate)}</td>
+                  <td>${m ? Utils.escapeHtml(Utils.getMemberFullName(m)) : '<em>Διαγραμμένο</em>'}</td>
+                  <td>${monthsList} ${r.year}</td>
+                  <td class="text-right money">${Utils.formatMoney(r.amount)}</td>
                   <td class="text-center no-print">
-                    <button class="btn btn-ghost btn-sm" onclick="showReceiptById('\${r.id}')">🧾</button>
-                    \${!isCancelled ? \`<button class="btn btn-ghost btn-sm" onclick="cancelReceipt('\${r.id}')">❌</button>\` : ''}
+                    <button class="btn btn-ghost btn-sm" onclick="showReceiptById('${r.id}')">🧾</button>
+                    ${!isCancelled ? `<button class="btn btn-ghost btn-sm" onclick="cancelReceipt('${r.id}')">❌</button>` : ''}
                   </td>
-                </tr>\`;
+                </tr>`;
               }).join('')}
             </tbody>
           </table>
@@ -1047,12 +1047,12 @@ const Views = {
           ${MONTHS_SHORT.map((m, i) => {
             const monthNum = i + 1;
             const isActive = (config.activeMonths || [9,10,11,12,1,2,3,4,5,6]).includes(monthNum);
-            return \`
+            return `
               <label class="month-check-label">
-                <input type="checkbox" name="activeMonth" value="\${monthNum}" \${isActive ? 'checked' : ''}>
-                <span>\${m}</span>
+                <input type="checkbox" name="activeMonth" value="${monthNum}" ${isActive ? 'checked' : ''}>
+                <span>${m}</span>
               </label>
-            \`;
+            `;
           }).join('')}
         </div>
         <button class="btn btn-primary mt-1" onclick="saveActiveMonths()">💾 Αποθήκευση</button>
