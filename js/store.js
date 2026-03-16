@@ -418,12 +418,15 @@ const Store = {
       reader.onload = (e) => {
         try {
           const data = JSON.parse(e.target.result);
-          if (!data.members || !data.payments) {
-            reject('Μη έγκυρο αρχείο backup');
+          const errors = this._validateImportData(data);
+          if (errors.length > 0) {
+            reject('Σφάλματα στο αρχείο:\n' + errors.join('\n'));
             return;
           }
+          // Atomic apply — all or nothing
           this.saveMembers(data.members);
           this.savePayments(data.payments);
+          this.saveReceipts(data.receipts || []);
           if (data.config) this.saveConfig(data.config);
           resolve(data);
         } catch (err) {
@@ -433,5 +436,55 @@ const Store = {
       reader.onerror = () => reject('Σφάλμα ανάγνωσης αρχείου');
       reader.readAsText(file);
     });
+  },
+
+  _validateImportData(data) {
+    const errors = [];
+    if (!data || typeof data !== 'object') { errors.push('Μη έγκυρο αρχείο JSON'); return errors; }
+    if (!Array.isArray(data.members)) errors.push('Λείπει ή δεν είναι πίνακας: members');
+    if (!Array.isArray(data.payments)) errors.push('Λείπει ή δεν είναι πίνακας: payments');
+    if (errors.length > 0) return errors;
+
+    const memberIds = new Set(data.members.map(m => m.id));
+
+    data.members.forEach((m, i) => {
+      if (!m.lastName) errors.push(`Μέλος #${i+1}: λείπει το επώνυμο`);
+      if (!m.firstName) errors.push(`Μέλος #${i+1}: λείπει το όνομα`);
+      if (!m.phone) errors.push(`Μέλος #${i+1}: λείπει το τηλέφωνο`);
+      if (m.category && !['adult','child','honorary'].includes(m.category) &&
+          !(data.config?.categories || []).find(c => c.id === m.category)) {
+        errors.push(`Μέλος #${i+1}: άγνωστη κατηγορία "${m.category}"`);
+      }
+      if (m.status && !['active','inactive'].includes(m.status)) {
+        errors.push(`Μέλος #${i+1}: μη έγκυρη κατάσταση "${m.status}"`);
+      }
+    });
+
+    data.payments.forEach((p, i) => {
+      if (!p.memberId || !memberIds.has(p.memberId)) errors.push(`Πληρωμή #${i+1}: memberId δεν αντιστοιχεί σε μέλος`);
+      if (!p.year || p.year < 2015 || p.year > 2040) errors.push(`Πληρωμή #${i+1}: μη έγκυρο έτος`);
+      if (!p.month || p.month < 1 || p.month > 12) errors.push(`Πληρωμή #${i+1}: μη έγκυρος μήνας`);
+      if (p.amount == null || isNaN(p.amount) || p.amount < 0) errors.push(`Πληρωμή #${i+1}: μη έγκυρο ποσό`);
+    });
+
+    if (data.receipts && Array.isArray(data.receipts)) {
+      data.receipts.forEach((r, i) => {
+        if (!r.receiptNumber) errors.push(`Απόδειξη #${i+1}: λείπει αριθμός απόδειξης`);
+        if (r.status && !['active','cancelled'].includes(r.status)) errors.push(`Απόδειξη #${i+1}: μη έγκυρη κατάσταση`);
+        if (!r.memberId || !memberIds.has(r.memberId)) errors.push(`Απόδειξη #${i+1}: memberId δεν αντιστοιχεί σε μέλος`);
+      });
+    }
+
+    if (data.config) {
+      if (data.config.categories && !Array.isArray(data.config.categories)) errors.push('Config: categories δεν είναι πίνακας');
+      if (data.config.activeMonths && !Array.isArray(data.config.activeMonths)) errors.push('Config: activeMonths δεν είναι πίνακας');
+    }
+
+    if (errors.length > 10) {
+      const total = errors.length;
+      errors.length = 10;
+      errors.push(`... και ${total - 10} ακόμα σφάλματα`);
+    }
+    return errors;
   }
 };
