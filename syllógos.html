@@ -1533,6 +1533,26 @@ tr.clickable-row:hover {
   padding-top: 4px;
 }
 
+.receipt-cancelled {
+  opacity: 0.7;
+  position: relative;
+}
+.receipt-cancelled .receipt-body .receipt-val {
+  text-decoration: line-through;
+}
+.receipt-cancel-stamp {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-30deg);
+  font-size: 4rem;
+  font-weight: 900;
+  color: rgba(192, 57, 43, 0.3);
+  letter-spacing: 8px;
+  pointer-events: none;
+  z-index: 1;
+}
+
 .receipt-badge {
   display: inline-flex;
   align-items: center;

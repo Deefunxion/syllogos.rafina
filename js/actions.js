@@ -75,15 +75,19 @@ function importBackup(file) {
 // ─── PAYMENT DETAIL ───────────────────────────────────
 function showPaymentDetail(paymentId) {
   const payments = Store.getPayments();
+  const receipts = Store.getReceipts();
   const p = payments.find(pp => pp.id === paymentId);
   if (!p) return;
-  const receiptNum = p.receiptNumber || Utils.getReceiptNumber(p);
+
+  const receipt = receipts.find(r => r.id === p.receiptId);
+  const receiptNum = receipt ? receipt.receiptNumber : (p.receiptNumber || '?');
+  const isCancelled = receipt && receipt.status === 'cancelled';
   const members = Store.getMembers();
   const member = members.find(mm => mm.id === p.memberId);
 
   Modals.open(`
     <div class="modal-header">
-      <h3>Στοιχεία Πληρωμής</h3>
+      <h3>Στοιχεία Πληρωμής ${isCancelled ? '<span style="color:var(--danger)">(ΑΚΥΡΟ)</span>' : ''}</h3>
       <button class="modal-close" onclick="Modals.close()">&times;</button>
     </div>
     <div class="modal-body">
@@ -95,33 +99,27 @@ function showPaymentDetail(paymentId) {
       ${p.notes ? `<div class="info-row"><span class="info-label">Σημειώσεις:</span><span class="info-value">${Utils.escapeHtml(p.notes)}</span></div>` : ''}
     </div>
     <div class="modal-footer">
-      <button class="btn btn-outline btn-sm" onclick="Modals.close(); showReceipt(['${p.id}'])">🧾 Απόδειξη</button>
-      <button class="btn btn-danger btn-sm" onclick="Modals.close(); deletePayment('${p.id}')">🗑️ Διαγραφή</button>
+      ${p.receiptId ? `<button class="btn btn-outline btn-sm" onclick="Modals.close(); showReceiptById('${p.receiptId}')">🧾 Απόδειξη</button>` : ''}
+      ${!isCancelled && receipt ? `<button class="btn btn-danger btn-sm" onclick="Modals.close(); cancelReceipt('${receipt.id}')">❌ Ακύρωση</button>` : ''}
       <button class="btn btn-outline" onclick="Modals.close()">Κλείσιμο</button>
     </div>
   `);
 }
 
 // ─── RECEIPT FUNCTIONS ────────────────────────────────
-function showReceipt(paymentIds) {
-  const payments = Store.getPayments();
+function showReceiptById(receiptId) {
+  const receipts = Store.getReceipts();
+  const receipt = receipts.find(r => r.id === receiptId);
+  if (!receipt) return;
+
+  const payments = Store.getPayments().filter(p => p.receiptId === receiptId);
   const members = Store.getMembers();
   const config = Store.getConfig();
-
-  const receiptPayments = paymentIds.map(id => payments.find(p => p.id === id)).filter(Boolean);
-  if (receiptPayments.length === 0) return;
-
-  // Group by member for display
-  const firstPayment = receiptPayments[0];
-  const member = members.find(m => m.id === firstPayment.memberId);
+  const member = members.find(m => m.id === receipt.memberId);
   const memberName = member ? Utils.getMemberFullName(member) : 'Άγνωστο μέλος';
   const childName = member ? Utils.getChildFullName(member) : '';
-  const totalAmount = receiptPayments.reduce((s, p) => s + (p.amount || 0), 0);
-  const monthsList = receiptPayments.map(p => Utils.getMonthShort(p.month)).join(', ');
-  const receiptNumbers = receiptPayments.map(p => p.receiptNumber || Utils.getReceiptNumber(p));
-  const receiptLabel = receiptNumbers.length === 1 
-    ? `#${receiptNumbers[0]}` 
-    : `#${receiptNumbers[0]} – #${receiptNumbers[receiptNumbers.length - 1]}`;
+  const monthsList = payments.map(p => Utils.getMonthShort(p.month)).join(', ');
+  const isCancelled = receipt.status === 'cancelled';
 
   Modals.open(`
     <div class="modal-header">
@@ -129,16 +127,17 @@ function showReceipt(paymentIds) {
       <button class="modal-close" onclick="Modals.close(); renderView()">&times;</button>
     </div>
     <div class="modal-body" id="receipt-content">
-      <div class="receipt">
+      <div class="receipt ${isCancelled ? 'receipt-cancelled' : ''}">
+        ${isCancelled ? '<div class="receipt-cancel-stamp">ΑΚΥΡΟ</div>' : ''}
         <div class="receipt-header">
           <div class="receipt-club">${Utils.escapeHtml(config.clubName)}</div>
           <div class="receipt-title">Αποδεικτικό Πληρωμής</div>
         </div>
-        <div class="receipt-number">Αρ. Απόδειξης: ${receiptLabel}</div>
+        <div class="receipt-number">Αρ. Απόδειξης: #${receipt.receiptNumber}</div>
         <div class="receipt-body">
           <div class="receipt-row">
             <span class="receipt-label">Ημερομηνία:</span>
-            <span class="receipt-val">${Utils.formatDate(firstPayment.paidDate)}</span>
+            <span class="receipt-val">${Utils.formatDate(receipt.paidDate)}</span>
           </div>
           <div class="receipt-row">
             <span class="receipt-label">Μέλος:</span>
@@ -151,25 +150,26 @@ function showReceipt(paymentIds) {
           </div>` : ''}
           <div class="receipt-row">
             <span class="receipt-label">Περίοδος:</span>
-            <span class="receipt-val">${monthsList} ${firstPayment.year}</span>
+            <span class="receipt-val">${monthsList} ${receipt.year}</span>
           </div>
           <div class="receipt-row">
             <span class="receipt-label">Μήνες:</span>
-            <span class="receipt-val">${receiptPayments.length}</span>
+            <span class="receipt-val">${payments.length}</span>
           </div>
+          ${payments.length > 0 ? `
           <div class="receipt-row">
             <span class="receipt-label">Ποσό ανά μήνα:</span>
-            <span class="receipt-val amount">${Utils.formatMoney(firstPayment.amount)}</span>
-          </div>
-          ${receiptPayments.length > 1 ? `
+            <span class="receipt-val amount">${Utils.formatMoney(payments[0].amount)}</span>
+          </div>` : ''}
+          ${payments.length > 1 ? `
           <div class="receipt-row" style="border-top:2px solid var(--primary);padding-top:12px;margin-top:8px">
             <span class="receipt-label" style="font-weight:700;font-size:1rem">Σύνολο:</span>
-            <span class="receipt-val amount" style="font-size:1.2rem">${Utils.formatMoney(totalAmount)}</span>
+            <span class="receipt-val amount" style="font-size:1.2rem">${Utils.formatMoney(receipt.amount)}</span>
           </div>` : ''}
-          ${firstPayment.notes ? `
+          ${receipt.notes ? `
           <div class="receipt-row">
             <span class="receipt-label">Σημειώσεις:</span>
-            <span class="receipt-val">${Utils.escapeHtml(firstPayment.notes)}</span>
+            <span class="receipt-val">${Utils.escapeHtml(receipt.notes)}</span>
           </div>` : ''}
         </div>
         <div class="receipt-footer">
@@ -187,6 +187,15 @@ function showReceipt(paymentIds) {
       <button class="btn btn-outline" onclick="Modals.close(); renderView()">Κλείσιμο</button>
     </div>
   `, true);
+}
+
+// Legacy wrapper
+function showReceipt(paymentIds) {
+  const payments = Store.getPayments();
+  const p = payments.find(pp => pp.id === paymentIds[0]);
+  if (p && p.receiptId) {
+    showReceiptById(p.receiptId);
+  }
 }
 
 function printReceipt() {
@@ -212,6 +221,9 @@ function printReceipt() {
       .receipt-footer { margin-top: 24px; padding-top: 16px; border-top: 2px solid #1a3a5c; display: flex; justify-content: space-between; align-items: flex-end; }
       .receipt-stamp { text-align: center; font-size: 0.8rem; color: #6b7a8d; }
       .stamp-line { display: block; width: 140px; border-top: 1px solid #333; margin-top: 40px; padding-top: 4px; }
+      .receipt-cancelled { opacity: 0.7; position: relative; }
+      .receipt-cancelled .receipt-body .receipt-val { text-decoration: line-through; }
+      .receipt-cancel-stamp { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-30deg); font-size: 4rem; font-weight: 900; color: rgba(192, 57, 43, 0.3); letter-spacing: 8px; pointer-events: none; z-index: 1; }
       @media print { body { margin: 0; } }
     </style></head><body>
     ${content.innerHTML}
