@@ -29,23 +29,26 @@ Double-click `syllogos.html` in Chrome/Edge. No build step required.
 
 | File | Contents |
 |---|---|
-| `js/store.js` | Constants (MONTHS_GR, LS_KEYS, DEFAULT_CONFIG), FileStorage (File System Access API, auto-save, IndexedDB), Store (localStorage CRUD) |
-| `js/utils.js` | Utils — UUID, date/money formatting, payment logic (`memberShouldPay`, `getMemberDebt`), receipt numbering, HTML escaping |
-| `js/app.js` | State, Router (`navigate`/`renderView`), Modals (`open`/`close`/`confirm`), `showToast`, `toggleSidebar` |
-| `js/views.js` | Views — `dashboard()`, `memberList()`, `memberDetail(id)`, `payments()`, `reports()`, `settings()` |
-| `js/forms.js` | Member and payment form handlers (`openMemberForm`, `saveMember`, `openPaymentForm`, `savePayment`, delete functions) |
-| `js/actions.js` | Settings save, receipt display/print, Excel exports, file connect modal, `importBackup` |
-| `js/init.js` | `init()` bootstrap, `DOMContentLoaded` listener |
+| `js/store.js` | Constants (MONTHS_GR, PAYMENT_METHODS, INCOME/EXPENSE/ASSET_CATEGORIES, LS_KEYS, DEFAULT_CONFIG), FileStorage, Store (localStorage CRUD for members, payments, receipts, transactions, assets) |
+| `js/utils.js` | Utils — UUID, date/money formatting, payment logic, receipt/member numbering, HTML escaping, `getPaymentMethodLabel` |
+| `js/app.js` | State, Router (`navigate`/`renderView`), Modals, `showToast`, `toggleSidebar` |
+| `js/views.js` | Views — `dashboard()`, `memberList()`, `memberDetail(id)`, `payments()`, `reports()`, `transactions()`, `assets()`, `settings()` |
+| `js/forms.js` | Member, payment, transaction, and asset form handlers (CRUD for all entities) |
+| `js/actions.js` | Settings save, receipt display/print, Excel exports (members, payments, receipts, transactions, assets, annual statement, GA list), file connect modal, `importBackup` |
+| `js/init.js` | `init()` bootstrap, `migrateDataV2`, `migrateDataV3`, `DOMContentLoaded` listener |
 
 **Load order matters:** `store → utils → app → views → forms → actions → init`
 
 Event handling uses delegation on the `#app` container.
 
-## Data Models
+## Data Models (v3.0)
 
-- **Member:** `{id, lastName, firstName, fatherName, idNumber, dateOfBirth, phone, email, category ("adult"|"child"|"honorary"), monthlyFee, status ("active"|"inactive"), child: {lastName, firstName, dateOfBirth, sport, notes}, ...}`
-- **Payment:** `{id, memberId, year, month, amount, paidDate, receiptNumber, notes, createdAt}`
-- **Config:** `{clubName, currentYear, categories: [{id, label, fee}]}`
+- **Member:** `{id, memberNumber, lastName, firstName, fatherName, idNumber, afm, dateOfBirth, phone, email, category, monthlyFee, status ("active"|"inactive"), departureDate, departureReason, child: {...}, ...}`
+- **Payment:** `{id, receiptId, memberId, year, month, amount, paidDate, paymentMethod, notes, createdAt}`
+- **Receipt:** `{id, receiptNumber, year, memberId, amount, paidDate, paymentMethod, notes, status ("active"|"cancelled"), ...}`
+- **Transaction:** `{id, type ("income"|"expense"), date, amount, category, description, documentNumber, documentType, paymentMethod, relatedReceiptId, notes, status, ...}`
+- **Asset:** `{id, name, description, category, purchaseDate, purchaseValue, documentNumber, location, status ("active"|"damaged"|"disposed"), disposalDate, notes, ...}`
+- **Config:** `{clubName, currentYear, dataVersion: 3, lastMemberNumber, lastReceiptNumberByYear, categories: [{id, label, fee}], activeMonths}`
 
 ## Key Business Rules
 
@@ -62,10 +65,20 @@ Event handling uses delegation on the `#app` container.
 - JSON import validation is basic and not atomic
 - UTC `toISOString()` can cause date drift near midnight
 
+## Legal Compliance Features (v3.0)
+
+- **Member Registry:** ΑΦΜ (Tax ID), sequential member number (Αύξων Αρ. Μέλους), departure date/reason
+- **Payment Method:** Cash/Bank Transfer/POS tracked on every payment and receipt
+- **Income-Expense Book (Βιβλίο Εσόδων-Εξόδων):** Full transaction ledger with auto-created income from subscription payments, manual income/expense entry, year/month/type filtering
+- **Asset Registry (Βιβλίο Περιουσιακών Στοιχείων):** Equipment and fixed assets tracking with CRUD, category/status filtering
+- **Reports:** Annual Financial Statement (Ετήσιος Απολογισμός), Quarterly Print Report (Τριμηνιαία), General Assembly Member List Export
+- **Data Migration:** v2→v3 auto-migration assigns member numbers, defaults payment methods, initializes new collections
+
 ## Reference Files
 
 - `PLAN_sports_club_app.md` — full specification and build plan
 - `CODE_REVIEW_NOTES.md` — detailed technical review with improvement proposals
 - `docs/plans/2026-03-16-receipt-system-overhaul.md` — receipt system overhaul plan (16 tasks)
 - `docs/plans/2026-03-16-file-split.md` — file split plan (completed)
+- `docs/plans/2026-03-16-legal-compliance.md` — legal compliance plan (17 tasks, completed)
 - `syllogos_data.json` — sample/production data file
