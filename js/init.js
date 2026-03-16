@@ -1,7 +1,89 @@
+// ─── DATA MIGRATION ──────────────────────────────────
+function migrateDataV2() {
+  const config = Store.getConfig();
+  if (config.dataVersion && config.dataVersion >= 2) return; // Already migrated
+
+  const payments = Store.getPayments();
+  if (payments.length === 0) {
+    // No data to migrate — just set version
+    config.dataVersion = 2;
+    if (!config.activeMonths) config.activeMonths = [9,10,11,12,1,2,3,4,5,6];
+    if (!config.lastReceiptNumberByYear) config.lastReceiptNumberByYear = {};
+    Store.saveConfig(config);
+    return;
+  }
+
+  // Group payments by memberId + paidDate to form receipts
+  const groups = {};
+  payments.forEach(p => {
+    const key = `${p.memberId}__${p.paidDate || p.createdAt || 'unknown'}`;
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(p);
+  });
+
+  // Sort groups by earliest paidDate/createdAt for receipt numbering
+  const sortedKeys = Object.keys(groups).sort((a, b) => {
+    const pa = groups[a][0];
+    const pb = groups[b][0];
+    const da = pa.paidDate || pa.createdAt || '';
+    const db = pb.paidDate || pb.createdAt || '';
+    if (da !== db) return da.localeCompare(db);
+    return (pa.createdAt || '').localeCompare(pb.createdAt || '');
+  });
+
+  // Create receipts and link payments
+  const receipts = [];
+  const counterByYear = {};
+
+  sortedKeys.forEach(key => {
+    const group = groups[key];
+    const first = group[0];
+    const year = first.year;
+    if (!counterByYear[year]) counterByYear[year] = 0;
+    counterByYear[year]++;
+
+    const receiptId = Utils.generateId();
+    const totalAmount = group.reduce((s, p) => s + (p.amount || 0), 0);
+
+    receipts.push({
+      id: receiptId,
+      receiptNumber: counterByYear[year],
+      year: year,
+      memberId: first.memberId,
+      amount: totalAmount,
+      paidDate: first.paidDate || Utils.todayISO(),
+      notes: first.notes || '',
+      status: 'active',
+      cancelledAt: null,
+      createdAt: first.createdAt || new Date().toISOString()
+    });
+
+    // Link each payment to the receipt
+    group.forEach(p => {
+      p.receiptId = receiptId;
+    });
+  });
+
+  // Save migrated data
+  Store.saveReceipts(receipts);
+  Store.savePayments(payments);
+
+  // Update config
+  config.dataVersion = 2;
+  config.lastReceiptNumberByYear = counterByYear;
+  if (!config.activeMonths) config.activeMonths = [9,10,11,12,1,2,3,4,5,6];
+  Store.saveConfig(config);
+
+  console.log(`Migration v2 complete: ${receipts.length} receipts created from ${payments.length} payments`);
+}
+
 // ─── INIT ─────────────────────────────────────────────
 async function init() {
   // Ensure config exists
   const config = Store.getConfig();
+
+  // Run data migration if needed
+  migrateDataV2();
 
   // Set club name in sidebar
   document.getElementById('sidebar-club-name').textContent = config.clubName;
@@ -15,7 +97,8 @@ async function init() {
   if (FileStorage.isSupported()) {
     const reconnected = await FileStorage.tryReconnect();
     if (reconnected) {
-      // Successfully reconnected - load data from file
+      // Migrate if file data is v1
+      migrateDataV2();
       const cfg = Store.getConfig();
       document.getElementById('sidebar-club-name').textContent = cfg.clubName;
       State.currentYear = cfg.currentYear || new Date().getFullYear();
