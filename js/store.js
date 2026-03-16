@@ -407,7 +407,7 @@ const Store = {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `syllógos_backup_${Utils.formatDateISO(new Date())}.json`;
+    a.download = Utils.sanitizeFilename('syllógos_backup_' + Utils.formatDateISO(new Date())) + '.json';
     a.click();
     URL.revokeObjectURL(url);
     showToast('Το αντίγραφο ασφαλείας κατέβηκε επιτυχώς', 'success');

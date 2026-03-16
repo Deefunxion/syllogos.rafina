@@ -352,7 +352,7 @@ function exportMembersExcel() {
   const ws = XLSX.utils.json_to_sheet(data);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Μέλη');
-  XLSX.writeFile(wb, `Μέλη_${Utils.formatDateISO(new Date())}.xlsx`);
+  XLSX.writeFile(wb, Utils.sanitizeFilename(`Μέλη_${Utils.formatDateISO(new Date())}`) + '.xlsx');
   showToast('Εξαγωγή μελών ολοκληρώθηκε', 'success');
 }
 
@@ -360,9 +360,12 @@ function exportPaymentsExcel() {
   if (!checkSheetJS()) return;
   const payments = Store.getPayments().sort((a,b) => (b.year - a.year) || (b.month - a.month));
   const members = Store.getMembers();
+  const receipts = Store.getReceipts();
   const data = payments.map(p => {
     const m = members.find(mm => mm.id === p.memberId);
-    const rn = p.receiptNumber || Utils.getReceiptNumber(p);
+    const rn = Utils.getReceiptNumberForPayment(p);
+    const receipt = p.receiptId ? receipts.find(r => r.id === p.receiptId) : null;
+    const status = receipt && receipt.status === 'cancelled' ? 'ΑΚΥΡΟ' : 'Ενεργή';
     return {
       'Αρ. Απόδ.': rn,
       'Ημ. Πληρωμής': Utils.formatDate(p.paidDate),
@@ -371,6 +374,7 @@ function exportPaymentsExcel() {
       'Έτος': p.year,
       'Μήνας': Utils.getMonthName(p.month),
       'Ποσό (€)': p.amount,
+      'Κατάσταση': status,
       'Σημειώσεις': p.notes || ''
     };
   });
@@ -378,55 +382,56 @@ function exportPaymentsExcel() {
   const ws = XLSX.utils.json_to_sheet(data);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Πληρωμές');
-  XLSX.writeFile(wb, `Πληρωμές_${Utils.formatDateISO(new Date())}.xlsx`);
+  XLSX.writeFile(wb, Utils.sanitizeFilename(`Πληρωμές_${Utils.formatDateISO(new Date())}`) + '.xlsx');
   showToast('Εξαγωγή πληρωμών ολοκληρώθηκε', 'success');
 }
 
 function exportReceiptsExcel(year) {
   if (!checkSheetJS()) return;
-  const payments = Store.getPayments()
-    .filter(p => p.year === year)
-    .sort((a, b) => {
-      const ra = a.receiptNumber || 0;
-      const rb = b.receiptNumber || 0;
-      if (ra !== rb) return ra - rb;
-      return (a.paidDate || '').localeCompare(b.paidDate || '');
-    });
+  const receipts = Store.getReceipts()
+    .filter(r => r.year === year)
+    .sort((a, b) => a.receiptNumber - b.receiptNumber);
+  const allPayments = Store.getPayments();
   const members = Store.getMembers();
   const config = Store.getConfig();
 
-  const data = payments.map(p => {
-    const m = members.find(mm => mm.id === p.memberId);
-    const rn = p.receiptNumber || Utils.getReceiptNumber(p);
+  const data = receipts.map(r => {
+    const m = members.find(mm => mm.id === r.memberId);
+    const linkedPayments = allPayments.filter(p => p.receiptId === r.id);
+    const monthsList = linkedPayments.map(p => Utils.getMonthShort(p.month)).join(', ');
+    const isCancelled = r.status === 'cancelled';
     return {
-      'Αρ. Απόδειξης': rn,
-      'Ημ. Πληρωμής': Utils.formatDate(p.paidDate),
+      'Αρ. Απόδειξης': r.receiptNumber,
+      'Ημ. Πληρωμής': Utils.formatDate(r.paidDate),
       'Επώνυμο': m ? m.lastName : 'Διαγραμμένο',
       'Όνομα': m ? m.firstName : '',
       'Παιδί': m ? Utils.getChildFullName(m) : '',
-      'Μήνας': Utils.getMonthName(p.month),
-      'Ποσό (€)': p.amount,
-      'Σημειώσεις': p.notes || ''
+      'Μήνες': monthsList,
+      'Ποσό (€)': r.amount,
+      'Κατάσταση': isCancelled ? 'ΑΚΥΡΟ' : 'Ενεργή',
+      'Σημειώσεις': r.notes || ''
     };
   });
 
-  // Add summary row
-  const totalAmount = payments.reduce((s, p) => s + (p.amount || 0), 0);
+  // Summary row — only active receipt totals
+  const activeReceipts = receipts.filter(r => r.status !== 'cancelled');
+  const totalAmount = activeReceipts.reduce((s, r) => s + (r.amount || 0), 0);
   data.push({
     'Αρ. Απόδειξης': '',
     'Ημ. Πληρωμής': '',
     'Επώνυμο': 'ΣΥΝΟΛΟ',
-    'Όνομα': `${payments.length} αποδείξεις`,
+    'Όνομα': `${activeReceipts.length} ενεργές αποδείξεις`,
     'Παιδί': '',
-    'Μήνας': '',
+    'Μήνες': '',
     'Ποσό (€)': totalAmount,
+    'Κατάσταση': '',
     'Σημειώσεις': ''
   });
 
   const ws = XLSX.utils.json_to_sheet(data);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, `Αποδείξεις ${year}`);
-  XLSX.writeFile(wb, `${config.clubName}_Αποδείξεις_${year}.xlsx`);
+  XLSX.writeFile(wb, Utils.sanitizeFilename(`${config.clubName}_Αποδείξεις_${year}`) + '.xlsx');
   showToast(`Εξαγωγή αποδείξεων ${year} ολοκληρώθηκε`, 'success');
 }
 
@@ -462,7 +467,7 @@ function exportAnnualGrid(year) {
   const ws = XLSX.utils.json_to_sheet(data);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, `Ετήσια ${year}`);
-  XLSX.writeFile(wb, `Ετήσια_Εικόνα_${year}.xlsx`);
+  XLSX.writeFile(wb, Utils.sanitizeFilename(`Ετήσια_Εικόνα_${year}`) + '.xlsx');
   showToast('Εξαγωγή ετήσιας εικόνας ολοκληρώθηκε', 'success');
 }
 
@@ -487,7 +492,7 @@ function exportDebtors(year) {
   const ws = XLSX.utils.json_to_sheet(debtors);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, `Οφειλέτες ${year}`);
-  XLSX.writeFile(wb, `Οφειλέτες_${year}.xlsx`);
+  XLSX.writeFile(wb, Utils.sanitizeFilename(`Οφειλέτες_${year}`) + '.xlsx');
   showToast('Εξαγωγή οφειλετών ολοκληρώθηκε', 'success');
 }
 
@@ -506,7 +511,7 @@ function exportMonthlyCollections(year) {
   const ws = XLSX.utils.json_to_sheet(data);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, `Εισπράξεις ${year}`);
-  XLSX.writeFile(wb, `Εισπράξεις_ανά_Μήνα_${year}.xlsx`);
+  XLSX.writeFile(wb, Utils.sanitizeFilename(`Εισπράξεις_ανά_Μήνα_${year}`) + '.xlsx');
   showToast('Εξαγωγή εισπράξεων ολοκληρώθηκε', 'success');
 }
 
@@ -528,7 +533,7 @@ function exportYearlyCollections() {
   const ws = XLSX.utils.json_to_sheet(data);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Ετήσιες Εισπράξεις');
-  XLSX.writeFile(wb, 'Εισπράξεις_ανά_Έτος.xlsx');
+  XLSX.writeFile(wb, Utils.sanitizeFilename('Εισπράξεις_ανά_Έτος') + '.xlsx');
   showToast('Εξαγωγή ετήσιων εισπράξεων ολοκληρώθηκε', 'success');
 }
 
