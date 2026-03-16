@@ -15,7 +15,10 @@ const Utils = {
   },
   formatDateISO(date) {
     const d = date instanceof Date ? date : new Date(date);
-    return d.toISOString().split('T')[0];
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
   },
   todayISO() {
     return this.formatDateISO(new Date());
@@ -46,10 +49,18 @@ const Utils = {
   memberShouldPay(member, month, year) {
     if (member.status !== 'active') return false;
     if (member.monthlyFee <= 0) return false;
+    // Check active months
+    const config = Store.getConfig();
+    const activeMonths = config.activeMonths || [9,10,11,12,1,2,3,4,5,6];
+    if (!activeMonths.includes(month)) return false;
+    // Registration date check — registration month counts
     if (!member.registrationDate) return true;
     const regDate = new Date(member.registrationDate);
-    const checkDate = new Date(year, month - 1, 1); // first day of month
-    return regDate <= checkDate;
+    const regYear = regDate.getFullYear();
+    const regMonth = regDate.getMonth() + 1;
+    if (year < regYear) return false;
+    if (year === regYear && month < regMonth) return false;
+    return true;
   },
   getMemberPaymentsForYear(memberId, year) {
     const payments = Store.getPayments();
@@ -57,16 +68,28 @@ const Utils = {
   },
   isMemberPaidForMonth(memberId, year, month) {
     const payments = Store.getPayments();
-    return payments.find(p => p.memberId === memberId && p.year === year && p.month === month) || null;
+    const receipts = Store.getReceipts();
+    const payment = payments.find(p =>
+      p.memberId === memberId && p.year === year && p.month === month
+    );
+    if (!payment) return null;
+    // Check if receipt is active
+    if (payment.receiptId) {
+      const receipt = receipts.find(r => r.id === payment.receiptId);
+      if (receipt && receipt.status === 'cancelled') return null;
+    }
+    return payment;
   },
   getMemberDebt(member, year) {
     const now = new Date();
     const currentYear = now.getFullYear();
     const currentMonth = now.getMonth() + 1;
+    const config = Store.getConfig();
+    const activeMonths = config.activeMonths || [9,10,11,12,1,2,3,4,5,6];
     const debtMonths = [];
 
     for (let m = 1; m <= 12; m++) {
-      // Only count months up to current month for the current year
+      if (!activeMonths.includes(m)) continue;
       if (year === currentYear && m > currentMonth) continue;
       if (!this.memberShouldPay(member, m, year)) continue;
       const paid = this.isMemberPaidForMonth(member.id, year, m);
@@ -83,33 +106,28 @@ const Utils = {
     div.textContent = str;
     return div.innerHTML;
   },
-  // Get receipt number for a payment within its year
-  // Receipt numbers are sequential per year, ordered by paidDate then createdAt
-  getReceiptNumber(payment) {
-    const payments = Store.getPayments();
-    // If the payment has a stored receipt number, use it
-    if (payment.receiptNumber) return payment.receiptNumber;
-    // Otherwise calculate based on position
-    const yearPayments = payments
-      .filter(p => p.year === payment.year)
-      .sort((a, b) => {
-        const da = a.paidDate || a.createdAt || '';
-        const db = b.paidDate || b.createdAt || '';
-        if (da !== db) return da.localeCompare(db);
-        return (a.createdAt || '').localeCompare(b.createdAt || '');
-      });
-    const idx = yearPayments.findIndex(p => p.id === payment.id);
-    return idx >= 0 ? idx + 1 : 0;
-  },
-  // Get the next receipt number for a given year
+  // Get the next receipt number for a year (monotonically increasing)
   getNextReceiptNumber(year) {
-    const payments = Store.getPayments().filter(p => p.year === year);
-    // Find max existing receipt number
-    let maxNum = 0;
-    payments.forEach(p => {
-      if (p.receiptNumber && p.receiptNumber > maxNum) maxNum = p.receiptNumber;
-    });
-    // Also count payments without receipt numbers just in case
-    return Math.max(maxNum, payments.length) + 1;
+    const config = Store.getConfig();
+    const counters = config.lastReceiptNumberByYear || {};
+    return (counters[year] || 0) + 1;
+  },
+  // Increment and persist the receipt counter for a year
+  incrementReceiptCounter(year) {
+    const config = Store.getConfig();
+    if (!config.lastReceiptNumberByYear) config.lastReceiptNumberByYear = {};
+    const next = (config.lastReceiptNumberByYear[year] || 0) + 1;
+    config.lastReceiptNumberByYear[year] = next;
+    Store.saveConfig(config);
+    return next;
+  },
+  // Get receipt number from the Receipt entity
+  getReceiptNumberForPayment(payment) {
+    const receipts = Store.getReceipts();
+    const receipt = receipts.find(r => r.id === payment.receiptId);
+    return receipt ? receipt.receiptNumber : (payment.receiptNumber || '?');
+  },
+  sanitizeFilename(name) {
+    return name.replace(/[/\\:*?"<>|]/g, '_').trim();
   }
 };
