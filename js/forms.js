@@ -228,9 +228,11 @@ function deleteMember(id) {
     () => {
       const updated = members.filter(m => m.id !== id);
       Store.saveMembers(updated);
-      // Also delete payments
+      // Also delete payments and receipts
       const payments = Store.getPayments().filter(p => p.memberId !== id);
       Store.savePayments(payments);
+      const receipts = Store.getReceipts().filter(r => r.memberId !== id);
+      Store.saveReceipts(receipts);
       showToast('Το μέλος διαγράφηκε', 'success');
       if (State.currentView === 'memberDetail') {
         navigate('members');
@@ -372,60 +374,100 @@ function savePayment(e) {
   if (isNaN(amount) || amount < 0) { showToast('Εισάγετε έγκυρο ποσό', 'error'); return; }
 
   const payments = Store.getPayments();
-  let duplicates = [];
-  const newPaymentIds = [];
+  const receipts = Store.getReceipts();
 
+  // Check for duplicate months
+  let duplicates = [];
+  const validMonths = [];
   months.forEach(month => {
-    // Check for duplicate payments
-    const existing = payments.find(p => p.memberId === memberId && p.year === year && p.month === month);
+    const existing = payments.find(p =>
+      p.memberId === memberId && p.year === year && p.month === month &&
+      (!p.receiptId || receipts.find(r => r.id === p.receiptId && r.status === 'active'))
+    );
     if (existing) {
       duplicates.push(Utils.getMonthShort(month));
-      return;
+    } else {
+      validMonths.push(month);
     }
-    const receiptNum = Utils.getNextReceiptNumber(year) + newPaymentIds.length;
+  });
+
+  if (validMonths.length === 0) {
+    if (duplicates.length > 0) {
+      showToast(`Υπάρχει ήδη πληρωμή για: ${duplicates.join(', ')}`, 'warning');
+    }
+    return;
+  }
+
+  // Create ONE receipt for all months paid together
+  const receiptNumber = Utils.incrementReceiptCounter(year);
+  const receiptId = Utils.generateId();
+  const totalAmount = validMonths.length * amount;
+
+  receipts.push({
+    id: receiptId,
+    receiptNumber,
+    year,
+    memberId,
+    amount: totalAmount,
+    paidDate,
+    notes,
+    status: 'active',
+    cancelledAt: null,
+    createdAt: new Date().toISOString()
+  });
+
+  // Create one payment per month, all linked to this receipt
+  const newPaymentIds = [];
+  validMonths.forEach(month => {
     const paymentId = Utils.generateId();
     payments.push({
       id: paymentId,
+      receiptId,
       memberId,
       year,
       month,
       amount,
       paidDate,
       notes,
-      receiptNumber: receiptNum,
       createdAt: new Date().toISOString()
     });
     newPaymentIds.push(paymentId);
   });
 
+  Store.saveReceipts(receipts);
   Store.savePayments(payments);
 
   if (duplicates.length > 0) {
     showToast(`Υπήρχε ήδη πληρωμή για: ${duplicates.join(', ')}`, 'warning');
   }
-  const saved = months.length - duplicates.length;
+  const saved = validMonths.length;
   if (saved > 0) {
-    showToast(`Καταχωρήθηκαν ${saved} πληρωμ${saved === 1 ? 'ή' : 'ές'}`, 'success');
+    showToast(`Καταχωρήθηκαν ${saved} πληρωμ${saved === 1 ? 'ή' : 'ές'} — Απόδειξη #${receiptNumber}`, 'success');
   }
 
   Modals.close();
 
-  // Show receipt for the new payments
+  // Show receipt for the new receipt
   if (newPaymentIds.length > 0) {
-    showReceipt(newPaymentIds);
+    showReceiptById(receiptId);
   } else {
     renderView();
   }
 }
 
-function deletePayment(paymentId) {
+function cancelReceipt(receiptId) {
+  const receipts = Store.getReceipts();
+  const receipt = receipts.find(r => r.id === receiptId);
+  if (!receipt) return;
+
   Modals.confirm(
-    'Διαγραφή πληρωμής;',
-    'Η πληρωμή θα αφαιρεθεί οριστικά.',
+    `Ακύρωση απόδειξης #${receipt.receiptNumber};`,
+    'Η απόδειξη θα παραμείνει στο αρχείο ως ακυρωμένη. Οι αντίστοιχοι μήνες θα γίνουν ξανά απλήρωτοι.',
     () => {
-      const payments = Store.getPayments().filter(p => p.id !== paymentId);
-      Store.savePayments(payments);
-      showToast('Η πληρωμή διαγράφηκε', 'success');
+      receipt.status = 'cancelled';
+      receipt.cancelledAt = new Date().toISOString();
+      Store.saveReceipts(receipts);
+      showToast(`Η απόδειξη #${receipt.receiptNumber} ακυρώθηκε`, 'success');
       renderView();
     }
   );
