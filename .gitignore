@@ -3,3 +3,10 @@ docs/
 
 # Keep CLAUDE.md tracked
 !CLAUDE.md
+
+# FontAwesome (local dependency, not tracked)
+fontawesome/
+
+# Design prototypes
+Brutalist_variations*
+frontpage-alternatives*
