@@ -555,6 +555,45 @@ function exportYearlyCollections() {
   showToast('Εξαγωγή ετήσιων εισπράξεων ολοκληρώθηκε', 'success');
 }
 
+function exportTransactionsExcel(year) {
+  if (!checkSheetJS()) return;
+  const transactions = Store.getTransactions()
+    .filter(t => {
+      const txDate = new Date(t.date);
+      return txDate.getFullYear() === year && t.status !== 'cancelled';
+    })
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  const data = transactions.map((t, i) => {
+    const cats = t.type === 'income' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
+    const cat = cats.find(c => c.id === t.category);
+    return {
+      'Α/Α': i + 1,
+      'Ημερομηνία': Utils.formatDate(t.date),
+      'Τύπος': t.type === 'income' ? 'ΕΣΟΔΟ' : 'ΕΞΟΔΟ',
+      'Κατηγορία': cat ? cat.label : t.category,
+      'Περιγραφή': t.description,
+      'Αρ. Παραστατικού': t.documentNumber || '',
+      'Τρόπος Πληρωμής': Utils.getPaymentMethodLabel(t.paymentMethod),
+      'Ποσό (€)': t.type === 'expense' ? -t.amount : t.amount,
+      'Σημειώσεις': t.notes || ''
+    };
+  });
+
+  const totalIncome = transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+  const totalExpense = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+  data.push({ 'Α/Α': '', 'Ημερομηνία': '', 'Τύπος': '', 'Κατηγορία': 'ΣΥΝΟΛΟ ΕΣΟΔΩΝ', 'Περιγραφή': '', 'Αρ. Παραστατικού': '', 'Τρόπος Πληρωμής': '', 'Ποσό (€)': totalIncome, 'Σημειώσεις': '' });
+  data.push({ 'Α/Α': '', 'Ημερομηνία': '', 'Τύπος': '', 'Κατηγορία': 'ΣΥΝΟΛΟ ΕΞΟΔΩΝ', 'Περιγραφή': '', 'Αρ. Παραστατικού': '', 'Τρόπος Πληρωμής': '', 'Ποσό (€)': -totalExpense, 'Σημειώσεις': '' });
+  data.push({ 'Α/Α': '', 'Ημερομηνία': '', 'Τύπος': '', 'Κατηγορία': 'ΥΠΟΛΟΙΠΟ', 'Περιγραφή': '', 'Αρ. Παραστατικού': '', 'Τρόπος Πληρωμής': '', 'Ποσό (€)': totalIncome - totalExpense, 'Σημειώσεις': '' });
+
+  const config = Store.getConfig();
+  const ws = XLSX.utils.json_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, `Έσοδα-Έξοδα ${year}`);
+  XLSX.writeFile(wb, Utils.sanitizeFilename(`${config.clubName}_Εσοδα_Εξοδα_${year}`) + '.xlsx');
+  showToast(`Εξαγωγή εσόδων-εξόδων ${year} ολοκληρώθηκε`, 'success');
+}
+
 // ─── FILE CONNECT MODAL ───────────────────────────────
 function showFileConnectModal() {
   const hasPending = !!FileStorage._pendingHandle;

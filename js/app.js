@@ -10,7 +10,10 @@ const State = {
   paymentSubTab: 'entry',
   reportType: 'debtors',
   reportYear: new Date().getFullYear(),
-  detailYear: new Date().getFullYear()
+  detailYear: new Date().getFullYear(),
+  txFilterType: 'all',
+  txFilterYear: new Date().getFullYear(),
+  txFilterMonth: 0
 };
 
 // ─── TOAST ────────────────────────────────────────────
@@ -56,6 +59,7 @@ function renderView() {
     case 'memberDetail': main.innerHTML = Views.memberDetail(State.currentMemberId); break;
     case 'payments':    main.innerHTML = Views.payments(); break;
     case 'reports':     main.innerHTML = Views.reports(); break;
+    case 'transactions': main.innerHTML = Views.transactions(); break;
     case 'settings':    main.innerHTML = Views.settings(); break;
     default:            main.innerHTML = Views.dashboard();
   }

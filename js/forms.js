@@ -480,6 +480,26 @@ function savePayment(e) {
   Store.saveReceipts(receipts);
   Store.savePayments(payments);
 
+  // Auto-create income transaction for the income-expense book
+  const transactions = Store.getTransactions();
+  const txMember = Store.getMembers().find(m => m.id === memberId);
+  transactions.push({
+    id: Utils.generateId(),
+    type: 'income',
+    date: paidDate,
+    amount: totalAmount,
+    category: 'subscriptions',
+    description: `Συνδρομή: ${txMember ? Utils.getMemberFullName(txMember) : 'Άγνωστο μέλος'} — ${validMonths.map(m => Utils.getMonthShort(m)).join(', ')} ${year}`,
+    documentNumber: `ΑΠ-${receiptNumber}/${year}`,
+    documentType: 'receipt',
+    paymentMethod: paymentMethod || 'cash',
+    relatedReceiptId: receiptId,
+    notes: notes,
+    status: 'active',
+    createdAt: new Date().toISOString()
+  });
+  Store.saveTransactions(transactions);
+
   if (duplicates.length > 0) {
     showToast(`Υπήρχε ήδη πληρωμή για: ${duplicates.join(', ')}`, 'warning');
   }
@@ -510,7 +530,167 @@ function cancelReceipt(receiptId) {
       receipt.status = 'cancelled';
       receipt.cancelledAt = new Date().toISOString();
       Store.saveReceipts(receipts);
+      // Mark linked transaction as cancelled
+      const transactions = Store.getTransactions();
+      const linkedTx = transactions.find(t => t.relatedReceiptId === receiptId);
+      if (linkedTx) {
+        linkedTx.status = 'cancelled';
+        linkedTx.cancelledAt = new Date().toISOString();
+        Store.saveTransactions(transactions);
+      }
       showToast(`Η απόδειξη #${receipt.receiptNumber} ακυρώθηκε`, 'success');
+      renderView();
+    }
+  );
+}
+
+// ─── TRANSACTION FORM (INCOME-EXPENSE BOOK) ──────────
+function openTransactionForm(type = 'expense', txId = null) {
+  const isEdit = txId !== null;
+  let tx = null;
+  if (isEdit) {
+    tx = Store.getTransactions().find(t => t.id === txId);
+    if (!tx) { showToast('Εγγραφή δεν βρέθηκε', 'error'); return; }
+    type = tx.type;
+  }
+
+  const categories = type === 'income' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
+  const catOptions = categories
+    .filter(c => c.id !== 'subscriptions')
+    .map(c => `<option value="${c.id}" ${tx && tx.category === c.id ? 'selected' : ''}>${c.label}</option>`)
+    .join('');
+
+  const title = type === 'income' ? 'Καταχώρηση Εσόδου' : 'Καταχώρηση Εξόδου';
+  const icon = type === 'income' ? 'fa-arrow-down' : 'fa-arrow-up';
+  const btnClass = type === 'income' ? 'btn-success' : 'btn-danger';
+
+  Modals.open(`
+    <div class="modal-header">
+      <h3><i class="fa-solid ${icon}"></i> ${isEdit ? 'Επεξεργασία' : title}</h3>
+      <button class="modal-close" onclick="Modals.close()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <form id="transaction-form" onsubmit="saveTransaction(event, '${type}', '${txId || ''}')">
+        <input type="hidden" name="type" value="${type}">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Ημερομηνία <span class="required">*</span></label>
+            <input type="date" class="form-control" name="date" value="${tx ? tx.date : Utils.todayISO()}" required>
+          </div>
+          <div class="form-group">
+            <label>Κατηγορία <span class="required">*</span></label>
+            <select class="form-control" name="category" required>
+              <option value="">— Επιλέξτε —</option>
+              ${catOptions}
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Περιγραφή <span class="required">*</span></label>
+          <input type="text" class="form-control" name="description" value="${tx ? Utils.escapeHtml(tx.description || '') : ''}" required placeholder="π.χ. Κορμάκια για αγώνες">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Ποσό (€) <span class="required">*</span></label>
+            <input type="number" class="form-control" name="amount" step="0.01" min="0.01" value="${tx ? tx.amount : ''}" required>
+          </div>
+          <div class="form-group">
+            <label>Τρόπος Πληρωμής</label>
+            <select class="form-control" name="paymentMethod">
+              ${PAYMENT_METHODS.map(pm => `<option value="${pm.id}" ${tx && tx.paymentMethod === pm.id ? 'selected' : ''}>${pm.label}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Αρ. Παραστατικού</label>
+            <input type="text" class="form-control" name="documentNumber" value="${tx ? Utils.escapeHtml(tx.documentNumber || '') : ''}" placeholder="π.χ. ΤΙΜ-1234">
+          </div>
+          <div class="form-group">
+            <label>Τύπος Παραστατικού</label>
+            <select class="form-control" name="documentType">
+              <option value="receipt" ${tx && tx.documentType === 'receipt' ? 'selected' : ''}>Απόδειξη</option>
+              <option value="invoice" ${tx && tx.documentType === 'invoice' ? 'selected' : ''}>Τιμολόγιο</option>
+              <option value="bank_statement" ${tx && tx.documentType === 'bank_statement' ? 'selected' : ''}>Κίνηση Τράπεζας</option>
+              <option value="other" ${tx && tx.documentType === 'other' ? 'selected' : ''}>Άλλο</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Σημειώσεις</label>
+          <textarea class="form-control" name="notes" rows="2">${tx ? Utils.escapeHtml(tx.notes || '') : ''}</textarea>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="Modals.close()">Ακύρωση</button>
+      <button class="btn ${btnClass}" onclick="document.getElementById('transaction-form').requestSubmit()">
+        <i class="fa-solid fa-floppy-disk"></i> ${isEdit ? 'Αποθήκευση' : 'Καταχώρηση'}
+      </button>
+    </div>
+  `, true);
+}
+
+function saveTransaction(e, type, editId) {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const transactions = Store.getTransactions();
+  const now = new Date().toISOString();
+
+  const txData = {
+    type: type,
+    date: fd.get('date'),
+    amount: parseFloat(fd.get('amount')),
+    category: fd.get('category'),
+    description: fd.get('description')?.trim() || '',
+    documentNumber: fd.get('documentNumber')?.trim() || '',
+    documentType: fd.get('documentType') || 'receipt',
+    paymentMethod: fd.get('paymentMethod') || 'cash',
+    notes: fd.get('notes')?.trim() || '',
+    relatedReceiptId: null,
+    updatedAt: now
+  };
+
+  if (!txData.date) { showToast('Εισάγετε ημερομηνία', 'error'); return; }
+  if (!txData.category) { showToast('Επιλέξτε κατηγορία', 'error'); return; }
+  if (!txData.description) { showToast('Εισάγετε περιγραφή', 'error'); return; }
+  if (isNaN(txData.amount) || txData.amount <= 0) { showToast('Εισάγετε έγκυρο ποσό', 'error'); return; }
+
+  if (editId) {
+    const idx = transactions.findIndex(t => t.id === editId);
+    if (idx === -1) { showToast('Εγγραφή δεν βρέθηκε', 'error'); return; }
+    transactions[idx] = { ...transactions[idx], ...txData };
+    Store.saveTransactions(transactions);
+    showToast('Η εγγραφή ενημερώθηκε', 'success');
+  } else {
+    txData.id = Utils.generateId();
+    txData.status = 'active';
+    txData.createdAt = now;
+    transactions.push(txData);
+    Store.saveTransactions(transactions);
+    const label = type === 'income' ? 'Το έσοδο' : 'Το έξοδο';
+    showToast(`${label} καταχωρήθηκε`, 'success');
+  }
+
+  Modals.close();
+  renderView();
+}
+
+function deleteTransaction(txId) {
+  const transactions = Store.getTransactions();
+  const tx = transactions.find(t => t.id === txId);
+  if (!tx) return;
+  if (tx.relatedReceiptId) {
+    showToast('Δεν μπορεί να διαγραφεί — συνδέεται με απόδειξη συνδρομής', 'error');
+    return;
+  }
+  Modals.confirm(
+    'Διαγραφή εγγραφής;',
+    `${tx.description} — ${Utils.formatMoney(tx.amount)}`,
+    () => {
+      const updated = transactions.filter(t => t.id !== txId);
+      Store.saveTransactions(updated);
+      showToast('Η εγγραφή διαγράφηκε', 'success');
       renderView();
     }
   );

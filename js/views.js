@@ -980,6 +980,128 @@ const Views = {
     `;
   },
 
+  // ── Income-Expense Book (Βιβλίο Εσόδων-Εξόδων) ──
+  transactions() {
+    const allTx = Store.getTransactions().filter(t => t.status !== 'cancelled');
+    const year = State.txFilterYear;
+    const month = State.txFilterMonth;
+    const typeFilter = State.txFilterType;
+
+    let filtered = allTx.filter(t => {
+      const txDate = new Date(t.date);
+      if (txDate.getFullYear() !== year) return false;
+      if (month > 0 && (txDate.getMonth() + 1) !== month) return false;
+      if (typeFilter !== 'all' && t.type !== typeFilter) return false;
+      return true;
+    });
+
+    filtered.sort((a, b) => b.date.localeCompare(a.date));
+
+    const totalIncome = filtered.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+    const totalExpense = filtered.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+    const balance = totalIncome - totalExpense;
+
+    const getCategoryLabel = (tx) => {
+      const cats = tx.type === 'income' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
+      const cat = cats.find(c => c.id === tx.category);
+      return cat ? cat.label : tx.category;
+    };
+
+    return `
+      <div class="view-header">
+        <h2><i class="fa-solid fa-book"></i> Βιβλίο Εσόδων-Εξόδων</h2>
+        <div class="view-actions no-print">
+          <button class="btn btn-success btn-sm" onclick="openTransactionForm('income')"><i class="fa-solid fa-plus"></i> Έσοδο</button>
+          <button class="btn btn-danger btn-sm" onclick="openTransactionForm('expense')"><i class="fa-solid fa-minus"></i> Έξοδο</button>
+        </div>
+      </div>
+
+      <div class="gap-row mb-2 no-print">
+        <div class="year-selector">
+          <button onclick="State.txFilterYear--; renderView()">◂</button>
+          <span class="year-display">${year}</span>
+          <button onclick="State.txFilterYear++; renderView()">▸</button>
+        </div>
+        <select class="form-control" style="max-width:140px" onchange="State.txFilterMonth = parseInt(this.value); renderView()">
+          <option value="0" ${month === 0 ? 'selected' : ''}>Όλοι οι μήνες</option>
+          ${MONTHS_GR.map((m, i) => `<option value="${i+1}" ${month === i+1 ? 'selected' : ''}>${m}</option>`).join('')}
+        </select>
+        <select class="form-control" style="max-width:120px" onchange="State.txFilterType = this.value; renderView()">
+          <option value="all" ${typeFilter === 'all' ? 'selected' : ''}>Όλα</option>
+          <option value="income" ${typeFilter === 'income' ? 'selected' : ''}>Έσοδα</option>
+          <option value="expense" ${typeFilter === 'expense' ? 'selected' : ''}>Έξοδα</option>
+        </select>
+        <button class="btn btn-outline btn-sm" onclick="exportTransactionsExcel(${year})"><i class="fa-solid fa-file-arrow-down"></i> Excel</button>
+      </div>
+
+      <div class="stats-grid mb-2">
+        <div class="stat-card">
+          <div class="stat-label">Έσοδα</div>
+          <div class="stat-value" style="color:var(--success)">${Utils.formatMoney(totalIncome)}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Έξοδα</div>
+          <div class="stat-value" style="color:var(--danger)">${Utils.formatMoney(totalExpense)}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Υπόλοιπο</div>
+          <div class="stat-value" style="color:${balance >= 0 ? 'var(--success)' : 'var(--danger)'}">${Utils.formatMoney(balance)}</div>
+        </div>
+      </div>
+
+      ${filtered.length === 0 ? `
+        <div class="empty-state">
+          <span class="empty-icon"><i class="fa-solid fa-book-open"></i></span>
+          <h3>Δεν υπάρχουν εγγραφές</h3>
+          <p>Καταχωρήστε έσοδα ή έξοδα για αυτή την περίοδο</p>
+        </div>
+      ` : `
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Ημ/νία</th>
+                <th>Τύπος</th>
+                <th>Κατηγορία</th>
+                <th>Περιγραφή</th>
+                <th>Παραστατικό</th>
+                <th class="text-right">Ποσό</th>
+                <th class="text-center no-print">Ενέργειες</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${filtered.map(t => `
+                <tr>
+                  <td>${Utils.formatDate(t.date)}</td>
+                  <td>${t.type === 'income'
+                    ? '<span style="color:var(--success)"><i class="fa-solid fa-arrow-down"></i> Έσοδο</span>'
+                    : '<span style="color:var(--danger)"><i class="fa-solid fa-arrow-up"></i> Έξοδο</span>'}</td>
+                  <td>${getCategoryLabel(t)}</td>
+                  <td>${Utils.escapeHtml(t.description)}</td>
+                  <td class="text-muted">${Utils.escapeHtml(t.documentNumber || '—')}</td>
+                  <td class="text-right money ${t.type === 'income' ? '' : 'text-danger'}">${t.type === 'expense' ? '-' : ''}${Utils.formatMoney(t.amount)}</td>
+                  <td class="text-center no-print">
+                    ${!t.relatedReceiptId ? `
+                      <button class="btn btn-ghost btn-sm" onclick="openTransactionForm('${t.type}', '${t.id}')"><i class="fa-solid fa-pen"></i></button>
+                      <button class="btn btn-ghost btn-sm" onclick="deleteTransaction('${t.id}')"><i class="fa-solid fa-trash"></i></button>
+                    ` : `<span class="text-muted" title="Αυτόματη εγγραφή από συνδρομή"><i class="fa-solid fa-link"></i></span>`}
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+            <tfoot>
+              <tr style="font-weight:700;background:var(--bg)">
+                <td colspan="5">Σύνολα Περιόδου</td>
+                <td class="text-right money">${Utils.formatMoney(balance)}</td>
+                <td></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      `}
+    `;
+  },
+
   // ── Settings ──
   settings() {
     const config = Store.getConfig();

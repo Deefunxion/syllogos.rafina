@@ -15,6 +15,27 @@ const LS_MEMBERS  = 'syllógos_members';
 const LS_PAYMENTS = 'syllógos_payments';
 const LS_RECEIPTS = 'syllógos_receipts';
 const LS_CONFIG   = 'syllógos_config';
+const LS_TRANSACTIONS = 'syllógos_transactions';
+
+const INCOME_CATEGORIES = [
+  { id: 'subscriptions', label: 'Συνδρομές Μελών' },
+  { id: 'donations', label: 'Δωρεές' },
+  { id: 'sponsorships', label: 'Χορηγίες' },
+  { id: 'grants', label: 'Επιχορηγήσεις' },
+  { id: 'events', label: 'Έσοδα Εκδηλώσεων' },
+  { id: 'other_income', label: 'Λοιπά Έσοδα' }
+];
+
+const EXPENSE_CATEGORIES = [
+  { id: 'coach_fees', label: 'Αμοιβές Προπονητών' },
+  { id: 'rent', label: 'Ενοίκια Εγκαταστάσεων' },
+  { id: 'equipment', label: 'Αθλητικός Εξοπλισμός' },
+  { id: 'travel', label: 'Αποστολές Αγώνων' },
+  { id: 'operations', label: 'Λειτουργικά Έξοδα' },
+  { id: 'utilities', label: 'Λογ. Κοινής Ωφέλειας' },
+  { id: 'insurance', label: 'Ασφαλιστικές Εισφορές' },
+  { id: 'other_expense', label: 'Λοιπά Έξοδα' }
+];
 
 const DEFAULT_CONFIG = {
   clubName: 'ΠΑΛΑΙΣΤΙΚΟΣ ΠΟΛ. ΣΥΛΛΟΓΟΣ ΡΑΦΗΝΑΣ ΚΑΙ ΠΕΡΙΧΩΡΩΝ',
@@ -145,11 +166,12 @@ const FileStorage = {
 
       // Write initial empty data
       const initData = {
-        version: '2.0',
+        version: '3.0',
         lastSaved: new Date().toISOString(),
         members: [],
         payments: [],
         receipts: [],
+        transactions: [],
         config: { ...DEFAULT_CONFIG }
       };
       await this._writeToFile(initData);
@@ -158,6 +180,7 @@ const FileStorage = {
       localStorage.setItem(LS_MEMBERS, JSON.stringify(initData.members));
       localStorage.setItem(LS_PAYMENTS, JSON.stringify(initData.payments));
       localStorage.setItem(LS_RECEIPTS, JSON.stringify(initData.receipts));
+      localStorage.setItem(LS_TRANSACTIONS, JSON.stringify(initData.transactions));
       localStorage.setItem(LS_CONFIG, JSON.stringify(initData.config));
 
       this._updateStatusUI(true);
@@ -212,6 +235,7 @@ const FileStorage = {
       localStorage.setItem(LS_MEMBERS, JSON.stringify(data.members));
       localStorage.setItem(LS_PAYMENTS, JSON.stringify(data.payments));
       localStorage.setItem(LS_RECEIPTS, JSON.stringify(data.receipts || []));
+      localStorage.setItem(LS_TRANSACTIONS, JSON.stringify(data.transactions || []));
       if (data.config) localStorage.setItem(LS_CONFIG, JSON.stringify(data.config));
 
       return data;
@@ -248,11 +272,12 @@ const FileStorage = {
     this._showAutoSaveIndicator('saving');
     try {
       const data = {
-        version: '2.0',
+        version: '3.0',
         lastSaved: new Date().toISOString(),
         members: Store.getMembers(),
         payments: Store.getPayments(),
         receipts: Store.getReceipts(),
+        transactions: Store.getTransactions(),
         config: Store.getConfig()
       };
       await this._writeToFile(data);
@@ -383,6 +408,15 @@ const Store = {
     localStorage.setItem(LS_RECEIPTS, JSON.stringify(receipts));
     FileStorage.scheduleAutoSave();
   },
+  getTransactions() {
+    try {
+      return JSON.parse(localStorage.getItem(LS_TRANSACTIONS)) || [];
+    } catch { return []; }
+  },
+  saveTransactions(transactions) {
+    localStorage.setItem(LS_TRANSACTIONS, JSON.stringify(transactions));
+    FileStorage.scheduleAutoSave();
+  },
   getConfig() {
     try {
       const cfg = JSON.parse(localStorage.getItem(LS_CONFIG));
@@ -395,7 +429,7 @@ const Store = {
   },
   getStorageSize() {
     let total = 0;
-    for (let key of [LS_MEMBERS, LS_PAYMENTS, LS_RECEIPTS, LS_CONFIG]) {
+    for (let key of [LS_MEMBERS, LS_PAYMENTS, LS_RECEIPTS, LS_TRANSACTIONS, LS_CONFIG]) {
       const item = localStorage.getItem(key);
       if (item) total += item.length * 2; // UTF-16
     }
@@ -403,11 +437,12 @@ const Store = {
   },
   exportBackup() {
     const data = {
-      version: '2.0',
+      version: '3.0',
       exportDate: new Date().toISOString(),
       members: this.getMembers(),
       payments: this.getPayments(),
       receipts: this.getReceipts(),
+      transactions: this.getTransactions(),
       config: this.getConfig()
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -434,6 +469,7 @@ const Store = {
           this.saveMembers(data.members);
           this.savePayments(data.payments);
           this.saveReceipts(data.receipts || []);
+          this.saveTransactions(data.transactions || []);
           if (data.config) this.saveConfig(data.config);
           resolve(data);
         } catch (err) {
@@ -481,6 +517,8 @@ const Store = {
         if (!r.memberId || !memberIds.has(r.memberId)) errors.push(`Απόδειξη #${i+1}: memberId δεν αντιστοιχεί σε μέλος`);
       });
     }
+
+    if (data.transactions && !Array.isArray(data.transactions)) errors.push('transactions δεν είναι πίνακας');
 
     if (data.config) {
       if (data.config.categories && !Array.isArray(data.config.categories)) errors.push('Config: categories δεν είναι πίνακας');
