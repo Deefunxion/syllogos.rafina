@@ -16,6 +16,14 @@ const LS_PAYMENTS = 'syllógos_payments';
 const LS_RECEIPTS = 'syllógos_receipts';
 const LS_CONFIG   = 'syllógos_config';
 const LS_TRANSACTIONS = 'syllógos_transactions';
+const LS_ASSETS = 'syllógos_assets';
+
+const ASSET_CATEGORIES = [
+  { id: 'sports_equipment', label: 'Αθλητικός Εξοπλισμός' },
+  { id: 'electronics', label: 'Ηλεκτρονικός Εξοπλισμός' },
+  { id: 'furniture', label: 'Έπιπλα' },
+  { id: 'other_asset', label: 'Λοιπά Πάγια' }
+];
 
 const INCOME_CATEGORIES = [
   { id: 'subscriptions', label: 'Συνδρομές Μελών' },
@@ -172,6 +180,7 @@ const FileStorage = {
         payments: [],
         receipts: [],
         transactions: [],
+        assets: [],
         config: { ...DEFAULT_CONFIG }
       };
       await this._writeToFile(initData);
@@ -181,6 +190,7 @@ const FileStorage = {
       localStorage.setItem(LS_PAYMENTS, JSON.stringify(initData.payments));
       localStorage.setItem(LS_RECEIPTS, JSON.stringify(initData.receipts));
       localStorage.setItem(LS_TRANSACTIONS, JSON.stringify(initData.transactions));
+      localStorage.setItem(LS_ASSETS, JSON.stringify(initData.assets));
       localStorage.setItem(LS_CONFIG, JSON.stringify(initData.config));
 
       this._updateStatusUI(true);
@@ -236,6 +246,7 @@ const FileStorage = {
       localStorage.setItem(LS_PAYMENTS, JSON.stringify(data.payments));
       localStorage.setItem(LS_RECEIPTS, JSON.stringify(data.receipts || []));
       localStorage.setItem(LS_TRANSACTIONS, JSON.stringify(data.transactions || []));
+      localStorage.setItem(LS_ASSETS, JSON.stringify(data.assets || []));
       if (data.config) localStorage.setItem(LS_CONFIG, JSON.stringify(data.config));
 
       return data;
@@ -278,6 +289,7 @@ const FileStorage = {
         payments: Store.getPayments(),
         receipts: Store.getReceipts(),
         transactions: Store.getTransactions(),
+        assets: Store.getAssets(),
         config: Store.getConfig()
       };
       await this._writeToFile(data);
@@ -417,6 +429,15 @@ const Store = {
     localStorage.setItem(LS_TRANSACTIONS, JSON.stringify(transactions));
     FileStorage.scheduleAutoSave();
   },
+  getAssets() {
+    try {
+      return JSON.parse(localStorage.getItem(LS_ASSETS)) || [];
+    } catch { return []; }
+  },
+  saveAssets(assets) {
+    localStorage.setItem(LS_ASSETS, JSON.stringify(assets));
+    FileStorage.scheduleAutoSave();
+  },
   getConfig() {
     try {
       const cfg = JSON.parse(localStorage.getItem(LS_CONFIG));
@@ -429,7 +450,7 @@ const Store = {
   },
   getStorageSize() {
     let total = 0;
-    for (let key of [LS_MEMBERS, LS_PAYMENTS, LS_RECEIPTS, LS_TRANSACTIONS, LS_CONFIG]) {
+    for (let key of [LS_MEMBERS, LS_PAYMENTS, LS_RECEIPTS, LS_TRANSACTIONS, LS_ASSETS, LS_CONFIG]) {
       const item = localStorage.getItem(key);
       if (item) total += item.length * 2; // UTF-16
     }
@@ -443,6 +464,7 @@ const Store = {
       payments: this.getPayments(),
       receipts: this.getReceipts(),
       transactions: this.getTransactions(),
+      assets: this.getAssets(),
       config: this.getConfig()
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -470,6 +492,7 @@ const Store = {
           this.savePayments(data.payments);
           this.saveReceipts(data.receipts || []);
           this.saveTransactions(data.transactions || []);
+          this.saveAssets(data.assets || []);
           if (data.config) this.saveConfig(data.config);
           resolve(data);
         } catch (err) {
@@ -519,6 +542,7 @@ const Store = {
     }
 
     if (data.transactions && !Array.isArray(data.transactions)) errors.push('transactions δεν είναι πίνακας');
+    if (data.assets && !Array.isArray(data.assets)) errors.push('assets δεν είναι πίνακας');
 
     if (data.config) {
       if (data.config.categories && !Array.isArray(data.config.categories)) errors.push('Config: categories δεν είναι πίνακας');

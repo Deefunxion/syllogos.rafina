@@ -13,7 +13,9 @@ const State = {
   detailYear: new Date().getFullYear(),
   txFilterType: 'all',
   txFilterYear: new Date().getFullYear(),
-  txFilterMonth: 0
+  txFilterMonth: 0,
+  assetFilterCategory: 'all',
+  assetFilterStatus: 'all'
 };
 
 // ─── TOAST ────────────────────────────────────────────
@@ -60,6 +62,7 @@ function renderView() {
     case 'payments':    main.innerHTML = Views.payments(); break;
     case 'reports':     main.innerHTML = Views.reports(); break;
     case 'transactions': main.innerHTML = Views.transactions(); break;
+    case 'assets':      main.innerHTML = Views.assets(); break;
     case 'settings':    main.innerHTML = Views.settings(); break;
     default:            main.innerHTML = Views.dashboard();
   }

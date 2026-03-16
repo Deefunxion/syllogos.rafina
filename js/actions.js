@@ -555,6 +555,43 @@ function exportYearlyCollections() {
   showToast('Εξαγωγή ετήσιων εισπράξεων ολοκληρώθηκε', 'success');
 }
 
+function exportAssetsExcel() {
+  if (!checkSheetJS()) return;
+  const assets = Store.getAssets().sort((a, b) => (a.name || '').localeCompare(b.name || '', 'el'));
+  const statusLabels = { active: 'Ενεργό', damaged: 'Κατεστραμμένο', disposed: 'Αποσυρμένο' };
+
+  const data = assets.map((a, i) => {
+    const cat = ASSET_CATEGORIES.find(c => c.id === a.category);
+    return {
+      'Α/Α': i + 1,
+      'Ονομασία': a.name,
+      'Περιγραφή': a.description || '',
+      'Κατηγορία': cat ? cat.label : a.category,
+      'Ημ. Αγοράς': Utils.formatDate(a.purchaseDate),
+      'Αξία Κτήσης (€)': a.purchaseValue || 0,
+      'Αρ. Παραστατικού': a.documentNumber || '',
+      'Θέση': a.location || '',
+      'Κατάσταση': statusLabels[a.status] || a.status,
+      'Ημ. Απόσυρσης': Utils.formatDate(a.disposalDate),
+      'Σημειώσεις': a.notes || ''
+    };
+  });
+
+  const totalActive = assets.filter(a => a.status === 'active').reduce((s, a) => s + (a.purchaseValue || 0), 0);
+  data.push({
+    'Α/Α': '', 'Ονομασία': 'ΣΥΝΟΛΟ ΕΝΕΡΓΩΝ', 'Περιγραφή': '', 'Κατηγορία': '',
+    'Ημ. Αγοράς': '', 'Αξία Κτήσης (€)': totalActive, 'Αρ. Παραστατικού': '',
+    'Θέση': '', 'Κατάσταση': '', 'Ημ. Απόσυρσης': '', 'Σημειώσεις': ''
+  });
+
+  const config = Store.getConfig();
+  const ws = XLSX.utils.json_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Περιουσιακά Στοιχεία');
+  XLSX.writeFile(wb, Utils.sanitizeFilename(`${config.clubName}_Περιουσιακά_Στοιχεία`) + '.xlsx');
+  showToast('Εξαγωγή περιουσιακών στοιχείων ολοκληρώθηκε', 'success');
+}
+
 function exportTransactionsExcel(year) {
   if (!checkSheetJS()) return;
   const transactions = Store.getTransactions()

@@ -1102,6 +1102,98 @@ const Views = {
     `;
   },
 
+  // ── Asset Registry (Βιβλίο Περιουσιακών Στοιχείων) ──
+  assets() {
+    const allAssets = Store.getAssets();
+    const catFilter = State.assetFilterCategory;
+    const statusFilter = State.assetFilterStatus;
+
+    let filtered = allAssets.filter(a => {
+      if (catFilter !== 'all' && a.category !== catFilter) return false;
+      if (statusFilter !== 'all' && a.status !== statusFilter) return false;
+      return true;
+    });
+
+    filtered.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'el'));
+
+    const totalValue = filtered.filter(a => a.status === 'active').reduce((s, a) => s + (a.purchaseValue || 0), 0);
+
+    const getAssetCategoryLabel = (catId) => {
+      const cat = ASSET_CATEGORIES.find(c => c.id === catId);
+      return cat ? cat.label : catId;
+    };
+
+    const statusLabels = { active: 'Ενεργό', damaged: 'Κατεστραμμένο', disposed: 'Αποσυρμένο' };
+
+    return `
+      <div class="view-header">
+        <h2><i class="fa-solid fa-boxes-stacked"></i> Περιουσιακά Στοιχεία</h2>
+        <div class="view-actions no-print">
+          <button class="btn btn-primary btn-sm" onclick="openAssetForm()"><i class="fa-solid fa-plus"></i> Νέο Στοιχείο</button>
+        </div>
+      </div>
+
+      <div class="gap-row mb-2 no-print">
+        <select class="form-control" style="max-width:200px" onchange="State.assetFilterCategory = this.value; renderView()">
+          <option value="all">Όλες οι κατηγορίες</option>
+          ${ASSET_CATEGORIES.map(c => `<option value="${c.id}" ${catFilter === c.id ? 'selected' : ''}>${c.label}</option>`).join('')}
+        </select>
+        <select class="form-control" style="max-width:160px" onchange="State.assetFilterStatus = this.value; renderView()">
+          <option value="all" ${statusFilter === 'all' ? 'selected' : ''}>Όλες οι καταστάσεις</option>
+          <option value="active" ${statusFilter === 'active' ? 'selected' : ''}>Ενεργά</option>
+          <option value="damaged" ${statusFilter === 'damaged' ? 'selected' : ''}>Κατεστραμμένα</option>
+          <option value="disposed" ${statusFilter === 'disposed' ? 'selected' : ''}>Αποσυρμένα</option>
+        </select>
+        <button class="btn btn-outline btn-sm" onclick="exportAssetsExcel()"><i class="fa-solid fa-file-arrow-down"></i> Excel</button>
+      </div>
+
+      <div class="mb-1">
+        <span class="text-muted">Ενεργά στοιχεία:</span> <strong>${filtered.filter(a => a.status === 'active').length}</strong>
+        <span class="text-muted ml-2">— Συνολική αξία:</span> <strong class="money">${Utils.formatMoney(totalValue)}</strong>
+      </div>
+
+      ${filtered.length === 0 ? `
+        <div class="empty-state">
+          <span class="empty-icon"><i class="fa-solid fa-box-open"></i></span>
+          <h3>Δεν υπάρχουν περιουσιακά στοιχεία</h3>
+          <p>Προσθέστε τον εξοπλισμό και τα πάγια του συλλόγου</p>
+        </div>
+      ` : `
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Ονομασία</th>
+                <th>Κατηγορία</th>
+                <th>Ημ. Αγοράς</th>
+                <th class="text-right">Αξία</th>
+                <th>Θέση</th>
+                <th>Κατάσταση</th>
+                <th class="text-center no-print">Ενέργειες</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${filtered.map(a => `
+                <tr ${a.status === 'disposed' ? 'style="opacity:0.5"' : ''}>
+                  <td><strong>${Utils.escapeHtml(a.name)}</strong>${a.description ? `<br><span class="text-muted" style="font-size:0.82rem">${Utils.escapeHtml(a.description)}</span>` : ''}</td>
+                  <td>${getAssetCategoryLabel(a.category)}</td>
+                  <td>${Utils.formatDate(a.purchaseDate)}</td>
+                  <td class="text-right money">${Utils.formatMoney(a.purchaseValue)}</td>
+                  <td class="text-muted">${Utils.escapeHtml(a.location || '—')}</td>
+                  <td>${statusLabels[a.status] || a.status}</td>
+                  <td class="text-center no-print">
+                    <button class="btn btn-ghost btn-sm" onclick="openAssetForm('${a.id}')"><i class="fa-solid fa-pen"></i></button>
+                    <button class="btn btn-ghost btn-sm" onclick="deleteAsset('${a.id}')"><i class="fa-solid fa-trash"></i></button>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      `}
+    `;
+  },
+
   // ── Settings ──
   settings() {
     const config = Store.getConfig();

@@ -695,3 +695,144 @@ function deleteTransaction(txId) {
     }
   );
 }
+
+// ─── ASSET FORM (ΒΙΒΛΙΟ ΠΕΡΙΟΥΣΙΑΚΩΝ ΣΤΟΙΧΕΙΩΝ) ─────
+function openAssetForm(assetId = null) {
+  const isEdit = assetId !== null;
+  let asset = null;
+  if (isEdit) {
+    asset = Store.getAssets().find(a => a.id === assetId);
+    if (!asset) { showToast('Στοιχείο δεν βρέθηκε', 'error'); return; }
+  }
+
+  const catOptions = ASSET_CATEGORIES.map(c =>
+    `<option value="${c.id}" ${asset && asset.category === c.id ? 'selected' : ''}>${c.label}</option>`
+  ).join('');
+
+  Modals.open(`
+    <div class="modal-header">
+      <h3><i class="fa-solid fa-boxes-stacked"></i> ${isEdit ? 'Επεξεργασία' : 'Νέο Περιουσιακό Στοιχείο'}</h3>
+      <button class="modal-close" onclick="Modals.close()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <form id="asset-form" onsubmit="saveAsset(event, '${assetId || ''}')">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Ονομασία <span class="required">*</span></label>
+            <input type="text" class="form-control" name="name" value="${asset ? Utils.escapeHtml(asset.name) : ''}" required placeholder="π.χ. Στρώμα πάλης">
+          </div>
+          <div class="form-group">
+            <label>Κατηγορία <span class="required">*</span></label>
+            <select class="form-control" name="category" required>
+              ${catOptions}
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Περιγραφή</label>
+          <input type="text" class="form-control" name="description" value="${asset ? Utils.escapeHtml(asset.description || '') : ''}">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Ημ. Αγοράς</label>
+            <input type="date" class="form-control" name="purchaseDate" value="${asset ? asset.purchaseDate || '' : ''}">
+          </div>
+          <div class="form-group">
+            <label>Αξία Κτήσης (€)</label>
+            <input type="number" class="form-control" name="purchaseValue" step="0.01" min="0" value="${asset ? asset.purchaseValue || '' : ''}">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Αρ. Παραστατικού</label>
+            <input type="text" class="form-control" name="documentNumber" value="${asset ? Utils.escapeHtml(asset.documentNumber || '') : ''}">
+          </div>
+          <div class="form-group">
+            <label>Θέση / Τοποθεσία</label>
+            <input type="text" class="form-control" name="location" value="${asset ? Utils.escapeHtml(asset.location || '') : ''}" placeholder="π.χ. Αίθουσα γυμναστικής">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Κατάσταση</label>
+            <select class="form-control" name="status">
+              <option value="active" ${!asset || asset.status === 'active' ? 'selected' : ''}>Ενεργό</option>
+              <option value="damaged" ${asset && asset.status === 'damaged' ? 'selected' : ''}>Κατεστραμμένο</option>
+              <option value="disposed" ${asset && asset.status === 'disposed' ? 'selected' : ''}>Αποσυρμένο</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Ημ. Απόσυρσης</label>
+            <input type="date" class="form-control" name="disposalDate" value="${asset ? asset.disposalDate || '' : ''}">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Σημειώσεις</label>
+          <textarea class="form-control" name="notes" rows="2">${asset ? Utils.escapeHtml(asset.notes || '') : ''}</textarea>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="Modals.close()">Ακύρωση</button>
+      <button class="btn btn-primary" onclick="document.getElementById('asset-form').requestSubmit()">
+        ${isEdit ? 'Αποθήκευση' : 'Προσθήκη'}
+      </button>
+    </div>
+  `, true);
+}
+
+function saveAsset(e, editId) {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const assets = Store.getAssets();
+  const now = new Date().toISOString();
+
+  const assetData = {
+    name: fd.get('name')?.trim() || '',
+    description: fd.get('description')?.trim() || '',
+    category: fd.get('category'),
+    purchaseDate: fd.get('purchaseDate') || '',
+    purchaseValue: parseFloat(fd.get('purchaseValue')) || 0,
+    documentNumber: fd.get('documentNumber')?.trim() || '',
+    location: fd.get('location')?.trim() || '',
+    status: fd.get('status') || 'active',
+    disposalDate: fd.get('disposalDate') || '',
+    notes: fd.get('notes')?.trim() || '',
+    updatedAt: now
+  };
+
+  if (!assetData.name) { showToast('Εισάγετε ονομασία', 'error'); return; }
+
+  if (editId) {
+    const idx = assets.findIndex(a => a.id === editId);
+    if (idx === -1) { showToast('Στοιχείο δεν βρέθηκε', 'error'); return; }
+    assets[idx] = { ...assets[idx], ...assetData };
+    Store.saveAssets(assets);
+    showToast('Το στοιχείο ενημερώθηκε', 'success');
+  } else {
+    assetData.id = Utils.generateId();
+    assetData.createdAt = now;
+    assets.push(assetData);
+    Store.saveAssets(assets);
+    showToast('Το στοιχείο προστέθηκε', 'success');
+  }
+
+  Modals.close();
+  renderView();
+}
+
+function deleteAsset(assetId) {
+  const assets = Store.getAssets();
+  const asset = assets.find(a => a.id === assetId);
+  if (!asset) return;
+  Modals.confirm(
+    'Διαγραφή στοιχείου;',
+    asset.name,
+    () => {
+      const updated = assets.filter(a => a.id !== assetId);
+      Store.saveAssets(updated);
+      showToast('Το στοιχείο διαγράφηκε', 'success');
+      renderView();
+    }
+  );
+}
