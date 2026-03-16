@@ -33,6 +33,7 @@ const Views = {
 
     // Last 5 payments
     const recentPayments = [...payments].sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || '')).slice(0, 5);
+    const receipts = Store.getReceipts();
 
     return `
       <div class="view-header">
@@ -111,13 +112,15 @@ const Views = {
               <tbody>
                 ${recentPayments.map(p => {
                   const m = members.find(mm => mm.id === p.memberId);
-                  const rn = p.receiptNumber || Utils.getReceiptNumber(p);
-                  return `<tr>
-                    <td><span class="receipt-badge">#${rn}</span></td>
-                    <td>${Utils.formatDate(p.paidDate)}</td>
+                  const receipt = receipts.find(r => r.id === p.receiptId);
+                  const rn = receipt ? receipt.receiptNumber : (p.receiptNumber || '?');
+                  const isCancelled = receipt && receipt.status === 'cancelled';
+                  return `<tr${isCancelled ? ' style="opacity:0.6"' : ''}>
+                    <td><span class="receipt-badge">#${rn}</span>${isCancelled ? ' <span class="badge badge-inactive" style="font-size:0.7rem">ΑΚΥΡΟ</span>' : ''}</td>
+                    <td${isCancelled ? ' style="text-decoration:line-through"' : ''}>${Utils.formatDate(p.paidDate)}</td>
                     <td>${m ? Utils.escapeHtml(Utils.getMemberFullName(m)) : '<em>Διαγραμμένο</em>'}</td>
                     <td>${Utils.getMonthShort(p.month)} ${p.year}</td>
-                    <td class="text-right money">${Utils.formatMoney(p.amount)}</td>
+                    <td class="text-right money"${isCancelled ? ' style="text-decoration:line-through"' : ''}>${Utils.formatMoney(p.amount)}</td>
                   </tr>`;
                 }).join('')}
               </tbody>
@@ -239,6 +242,9 @@ const Views = {
     }
 
     const year = State.detailYear;
+    const config = Store.getConfig();
+    const activeMonths = config.activeMonths || [9,10,11,12,1,2,3,4,5,6];
+    const receipts = Store.getReceipts();
     const payments = Utils.getMemberPaymentsForYear(member.id, year);
     const allPayments = Store.getPayments()
       .filter(p => p.memberId === member.id)
@@ -247,6 +253,17 @@ const Views = {
     // Payment grid html
     let gridHtml = '';
     for (let m = 1; m <= 12; m++) {
+      // Check if month is in active months
+      if (!activeMonths.includes(m)) {
+        gridHtml += `
+          <div class="payment-month inactive-month" title="${MONTHS_GR[m-1]} — Μη ενεργός μήνας">
+            <span class="month-label">${MONTHS_SHORT[m-1]}</span>
+            <span class="month-status">—</span>
+          </div>
+        `;
+        continue;
+      }
+
       const payment = Utils.isMemberPaidForMonth(member.id, year, m);
       const shouldPay = Utils.memberShouldPay(member, m, year);
 
@@ -376,17 +393,19 @@ const Views = {
               </thead>
               <tbody>
                 ${allPayments.map(p => {
-                  const rn = p.receiptNumber || Utils.getReceiptNumber(p);
+                  const receipt = receipts.find(r => r.id === p.receiptId);
+                  const rn = receipt ? receipt.receiptNumber : (p.receiptNumber || '?');
+                  const isCancelled = receipt && receipt.status === 'cancelled';
                   return `
-                  <tr>
-                    <td><span class="receipt-badge">#${rn}</span></td>
-                    <td>${Utils.formatDate(p.paidDate)}</td>
-                    <td>${Utils.getMonthName(p.month)} ${p.year}</td>
-                    <td class="text-right money">${Utils.formatMoney(p.amount)}</td>
+                  <tr${isCancelled ? ' style="opacity:0.6"' : ''}>
+                    <td><span class="receipt-badge">#${rn}</span>${isCancelled ? ' <span class="badge badge-inactive" style="font-size:0.7rem">ΑΚΥΡΟ</span>' : ''}</td>
+                    <td${isCancelled ? ' style="text-decoration:line-through"' : ''}>${Utils.formatDate(p.paidDate)}</td>
+                    <td${isCancelled ? ' style="text-decoration:line-through"' : ''}>${Utils.getMonthName(p.month)} ${p.year}</td>
+                    <td class="text-right money"${isCancelled ? ' style="text-decoration:line-through"' : ''}>${Utils.formatMoney(p.amount)}</td>
                     <td class="text-muted">${Utils.escapeHtml(p.notes || '')}</td>
                     <td class="text-center no-print">
-                      <button class="btn btn-ghost btn-sm" onclick="showReceipt(['${p.id}'])" title="Απόδειξη">🧾</button>
-                      <button class="btn btn-ghost btn-sm" onclick="deletePayment('${p.id}')" title="Διαγραφή">🗑️</button>
+                      ${receipt ? `<button class="btn btn-ghost btn-sm" onclick="showReceiptById('${receipt.id}')" title="Απόδειξη">🧾</button>` : ''}
+                      ${receipt && !isCancelled ? `<button class="btn btn-ghost btn-sm" onclick="cancelReceipt('${receipt.id}')" title="Ακύρωση">🗑️</button>` : ''}
                     </td>
                   </tr>`;
                 }).join('')}
@@ -425,6 +444,7 @@ const Views = {
   _paymentsEntry() {
     const payments = Store.getPayments();
     const members = Store.getMembers();
+    const receipts = Store.getReceipts();
     const recent = [...payments].sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || '')).slice(0, 20);
 
     return `
@@ -453,22 +473,25 @@ const Views = {
                   <th>Περίοδος</th>
                   <th class="text-right">Ποσό</th>
                   <th>Σημειώσεις</th>
-                  <th class="text-center no-print">🗑️</th>
+                  <th class="text-center no-print">Ενέργειες</th>
                 </tr>
               </thead>
               <tbody>
                 ${recent.map(p => {
                   const m = members.find(mm => mm.id === p.memberId);
-                  const rn = p.receiptNumber || Utils.getReceiptNumber(p);
-                  return `<tr>
-                    <td><span class="receipt-badge">#${rn}</span></td>
-                    <td>${Utils.formatDate(p.paidDate)}</td>
+                  const receipt = receipts.find(r => r.id === p.receiptId);
+                  const rn = receipt ? receipt.receiptNumber : (p.receiptNumber || '?');
+                  const isCancelled = receipt && receipt.status === 'cancelled';
+                  return `<tr${isCancelled ? ' style="opacity:0.6"' : ''}>
+                    <td><span class="receipt-badge">#${rn}</span>${isCancelled ? ' <span class="badge badge-inactive" style="font-size:0.7rem">ΑΚΥΡΟ</span>' : ''}</td>
+                    <td${isCancelled ? ' style="text-decoration:line-through"' : ''}>${Utils.formatDate(p.paidDate)}</td>
                     <td>${m ? `<a style="cursor:pointer;color:var(--primary-light)" onclick="navigate('memberDetail',{memberId:'${m.id}'})">${Utils.escapeHtml(Utils.getMemberFullName(m))}</a>` : '<em>Διαγραμμένο</em>'}</td>
                     <td>${Utils.getMonthShort(p.month)} ${p.year}</td>
-                    <td class="text-right money">${Utils.formatMoney(p.amount)}</td>
+                    <td class="text-right money"${isCancelled ? ' style="text-decoration:line-through"' : ''}>${Utils.formatMoney(p.amount)}</td>
                     <td class="text-muted">${Utils.escapeHtml(p.notes || '')}</td>
                     <td class="text-center no-print">
-                      <button class="btn btn-ghost btn-sm" onclick="deletePayment('${p.id}')">🗑️</button>
+                      ${receipt ? `<button class="btn btn-ghost btn-sm" onclick="showReceiptById('${receipt.id}')" title="Απόδειξη">🧾</button>` : ''}
+                      ${receipt && !isCancelled ? `<button class="btn btn-ghost btn-sm" onclick="cancelReceipt('${receipt.id}')" title="Ακύρωση">🗑️</button>` : ''}
                     </td>
                   </tr>`;
                 }).join('')}
@@ -873,12 +896,15 @@ const Views = {
 
   _reportReceipts() {
     const year = State.reportYear;
+    const receipts = Store.getReceipts();
     const payments = Store.getPayments()
       .filter(p => p.year === year)
       .sort((a, b) => {
-        const ra = a.receiptNumber || 0;
-        const rb = b.receiptNumber || 0;
-        if (ra !== rb) return ra - rb;
+        const ra = receipts.find(r => r.id === a.receiptId);
+        const rb = receipts.find(r => r.id === b.receiptId);
+        const rnA = ra ? ra.receiptNumber : (a.receiptNumber || 0);
+        const rnB = rb ? rb.receiptNumber : (b.receiptNumber || 0);
+        if (rnA !== rnB) return rnA - rnB;
         const da = a.paidDate || a.createdAt || '';
         const db = b.paidDate || b.createdAt || '';
         return da.localeCompare(db);
@@ -926,16 +952,18 @@ const Views = {
             <tbody>
               ${payments.map(p => {
                 const m = members.find(mm => mm.id === p.memberId);
-                const rn = p.receiptNumber || Utils.getReceiptNumber(p);
-                return `<tr>
-                  <td><span class="receipt-badge">#${rn}</span></td>
-                  <td>${Utils.formatDate(p.paidDate)}</td>
+                const receipt = receipts.find(r => r.id === p.receiptId);
+                const rn = receipt ? receipt.receiptNumber : (p.receiptNumber || '?');
+                const isCancelled = receipt && receipt.status === 'cancelled';
+                return `<tr${isCancelled ? ' style="opacity:0.6"' : ''}>
+                  <td><span class="receipt-badge">#${rn}</span>${isCancelled ? ' <span class="badge badge-inactive" style="font-size:0.7rem">ΑΚΥΡΟ</span>' : ''}</td>
+                  <td${isCancelled ? ' style="text-decoration:line-through"' : ''}>${Utils.formatDate(p.paidDate)}</td>
                   <td><strong>${m ? Utils.escapeHtml(Utils.getMemberFullName(m)) : 'Διαγραμμένο'}</strong></td>
                   <td>${m ? Utils.escapeHtml(Utils.getChildFullName(m)) : ''}</td>
                   <td>${Utils.getMonthName(p.month)}</td>
-                  <td class="text-right money">${Utils.formatMoney(p.amount)}</td>
+                  <td class="text-right money"${isCancelled ? ' style="text-decoration:line-through"' : ''}>${Utils.formatMoney(p.amount)}</td>
                   <td class="text-center no-print">
-                    <button class="btn btn-ghost btn-sm" onclick="showReceipt(['${p.id}'])" title="Εκτύπωση απόδειξης">🧾</button>
+                    ${receipt ? `<button class="btn btn-ghost btn-sm" onclick="showReceiptById('${receipt.id}')" title="Εκτύπωση απόδειξης">🧾</button>` : ''}
                   </td>
                 </tr>`;
               }).join('')}
