@@ -10,16 +10,22 @@ Multi-file HTML + JS application for managing a Greek wrestling club's member re
 
 - **No build system, no npm, no frameworks** — pure vanilla JavaScript split across 7 `.js` files
 - **Storage:** File System Access API (primary, .json on disk) → localStorage fallback → IndexedDB for file handle persistence
-- **External CDN deps:** SheetJS (xlsx) for Excel export, Google Fonts (Playfair Display, IBM Plex Sans, IBM Plex Mono)
+- **Icons:** FontAwesome 7.0.0 (local at `fontawesome/`) — no emojis in UI
+- **Fonts (CDN):** Google Fonts (Inter Tight, Instrument Serif, JetBrains Mono)
+- **Other CDN deps:** SheetJS (xlsx) for Excel export
 - Opens directly via `file://` or any HTTP server; works offline after first load
+
+## Design System
+
+Swiss Brutalist aesthetic: `#111` black + `#ff3b30` red accent on `#fafafa` background. No border-radius, 2px solid black borders throughout. Typography: Instrument Serif (italic) for headings, Inter Tight (uppercase, heavy weight) for body/labels, JetBrains Mono for data/monospace. All icons are FontAwesome 7 — no emojis anywhere in the codebase.
 
 ## How to Run
 
-Double-click `syllógos.html` in Chrome/Edge. No build step required.
+Double-click `syllogos.html` in Chrome/Edge. No build step required.
 
 ## Architecture
 
-`syllógos.html` contains CSS + HTML shell. JS is split into 7 files loaded via `<script>` tags in dependency order:
+`syllogos.html` contains CSS + HTML shell. JS is split into 7 files loaded via `<script>` tags in dependency order:
 
 | File | Contents |
 |---|---|
