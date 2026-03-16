@@ -7,11 +7,15 @@ const MONTHS_SHORT = ['ΙΑΝ','ΦΕΒ','ΜΑΡ','ΑΠΡ','ΜΑΙ','ΙΟΥΝ',
 
 const LS_MEMBERS  = 'syllógos_members';
 const LS_PAYMENTS = 'syllógos_payments';
+const LS_RECEIPTS = 'syllógos_receipts';
 const LS_CONFIG   = 'syllógos_config';
 
 const DEFAULT_CONFIG = {
   clubName: 'ΠΑΛΑΙΣΤΙΚΟΣ ΠΟΛ. ΣΥΛΛΟΓΟΣ ΡΑΦΗΝΑΣ ΚΑΙ ΠΕΡΙΧΩΡΩΝ',
   currentYear: new Date().getFullYear(),
+  activeMonths: [9, 10, 11, 12, 1, 2, 3, 4, 5, 6],
+  lastReceiptNumberByYear: {},
+  dataVersion: 2,
   categories: [
     { id: 'adult',    label: 'Ενήλικας',      fee: 25 },
     { id: 'child',    label: 'Παιδί',          fee: 15 },
@@ -138,6 +142,7 @@ const FileStorage = {
         lastSaved: new Date().toISOString(),
         members: [],
         payments: [],
+        receipts: [],
         config: { ...DEFAULT_CONFIG }
       };
       await this._writeToFile(initData);
@@ -145,6 +150,7 @@ const FileStorage = {
       // Also sync to localStorage
       localStorage.setItem(LS_MEMBERS, JSON.stringify(initData.members));
       localStorage.setItem(LS_PAYMENTS, JSON.stringify(initData.payments));
+      localStorage.setItem(LS_RECEIPTS, JSON.stringify(initData.receipts));
       localStorage.setItem(LS_CONFIG, JSON.stringify(initData.config));
 
       this._updateStatusUI(true);
@@ -198,6 +204,7 @@ const FileStorage = {
       // Sync to localStorage (used as fast read cache)
       localStorage.setItem(LS_MEMBERS, JSON.stringify(data.members));
       localStorage.setItem(LS_PAYMENTS, JSON.stringify(data.payments));
+      localStorage.setItem(LS_RECEIPTS, JSON.stringify(data.receipts || []));
       if (data.config) localStorage.setItem(LS_CONFIG, JSON.stringify(data.config));
 
       return data;
@@ -238,6 +245,7 @@ const FileStorage = {
         lastSaved: new Date().toISOString(),
         members: Store.getMembers(),
         payments: Store.getPayments(),
+        receipts: Store.getReceipts(),
         config: Store.getConfig()
       };
       await this._writeToFile(data);
@@ -359,6 +367,15 @@ const Store = {
     localStorage.setItem(LS_PAYMENTS, JSON.stringify(payments));
     FileStorage.scheduleAutoSave();
   },
+  getReceipts() {
+    try {
+      return JSON.parse(localStorage.getItem(LS_RECEIPTS)) || [];
+    } catch { return []; }
+  },
+  saveReceipts(receipts) {
+    localStorage.setItem(LS_RECEIPTS, JSON.stringify(receipts));
+    FileStorage.scheduleAutoSave();
+  },
   getConfig() {
     try {
       const cfg = JSON.parse(localStorage.getItem(LS_CONFIG));
@@ -371,7 +388,7 @@ const Store = {
   },
   getStorageSize() {
     let total = 0;
-    for (let key of [LS_MEMBERS, LS_PAYMENTS, LS_CONFIG]) {
+    for (let key of [LS_MEMBERS, LS_PAYMENTS, LS_RECEIPTS, LS_CONFIG]) {
       const item = localStorage.getItem(key);
       if (item) total += item.length * 2; // UTF-16
     }
@@ -383,6 +400,7 @@ const Store = {
       exportDate: new Date().toISOString(),
       members: this.getMembers(),
       payments: this.getPayments(),
+      receipts: this.getReceipts(),
       config: this.getConfig()
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
