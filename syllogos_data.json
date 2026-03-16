@@ -1,6 +1,6 @@
 {
-  "version": "2.0",
-  "lastSaved": "2026-03-16T18:02:40.122Z",
+  "version": "3.0",
+  "lastSaved": "2026-03-16T21:53:27.474Z",
   "members": [
     {
       "lastName": "ΠΑΠΑΔΟΠΟΥΛΟΣ",
@@ -26,7 +26,11 @@
       },
       "updatedAt": "2026-03-16T08:40:55.231Z",
       "id": "8eebe8fa-23c3-4bc6-a260-e38180d9f58c",
-      "createdAt": "2026-03-16T08:40:55.231Z"
+      "createdAt": "2026-03-16T08:40:55.231Z",
+      "memberNumber": 1,
+      "afm": "",
+      "departureDate": "",
+      "departureReason": ""
     }
   ],
   "payments": [
@@ -39,7 +43,8 @@
       "paidDate": "2026-03-16",
       "notes": "",
       "createdAt": "2026-03-16T08:44:04.546Z",
-      "receiptId": "74b1d06d-889c-44ef-acb5-1c98c03f2a0d"
+      "receiptId": "74b1d06d-889c-44ef-acb5-1c98c03f2a0d",
+      "paymentMethod": "cash"
     },
     {
       "id": "f92cf1cb-309d-450b-b6da-94eee2ad18de",
@@ -50,7 +55,8 @@
       "paidDate": "2026-03-16",
       "notes": "",
       "createdAt": "2026-03-16T08:44:42.610Z",
-      "receiptId": "74b1d06d-889c-44ef-acb5-1c98c03f2a0d"
+      "receiptId": "74b1d06d-889c-44ef-acb5-1c98c03f2a0d",
+      "paymentMethod": "cash"
     },
     {
       "id": "3b0f813c-2552-43b4-a4ba-f9453af147ab",
@@ -61,7 +67,8 @@
       "paidDate": "2026-03-16",
       "notes": "",
       "createdAt": "2026-03-16T08:44:45.634Z",
-      "receiptId": "74b1d06d-889c-44ef-acb5-1c98c03f2a0d"
+      "receiptId": "74b1d06d-889c-44ef-acb5-1c98c03f2a0d",
+      "paymentMethod": "cash"
     }
   ],
   "receipts": [
@@ -75,9 +82,12 @@
       "notes": "",
       "status": "active",
       "cancelledAt": null,
-      "createdAt": "2026-03-16T08:44:04.546Z"
+      "createdAt": "2026-03-16T08:44:04.546Z",
+      "paymentMethod": "cash"
     }
   ],
+  "transactions": [],
+  "assets": [],
   "config": {
     "clubName": "ΠΑΛΑΙΣΤΙΚΟΣ ΠΟΛ. ΣΥΛΛΟΓΟΣ ΡΑΦΗΝΑΣ ΚΑΙ ΠΕΡΙΧΩΡΩΝ",
     "currentYear": 2026,
@@ -98,7 +108,7 @@
         "fee": 0
       }
     ],
-    "dataVersion": 2,
+    "dataVersion": 3,
     "lastReceiptNumberByYear": {
       "2026": 1
     },
@@ -113,6 +123,7 @@
       4,
       5,
       6
-    ]
+    ],
+    "lastMemberNumber": 1
   }
 }
