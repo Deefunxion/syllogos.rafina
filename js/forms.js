@@ -288,12 +288,22 @@ function openPaymentForm(memberId = null, preMonth = null, preYear = null) {
         <div class="form-group">
           <label>Μήνες <span class="required">*</span></label>
           <div class="month-check-grid">
-            ${MONTHS_SHORT.map((m, i) => `
-              <label class="month-check-label">
-                <input type="checkbox" name="months" value="${i + 1}" ${preMonth === (i + 1) ? 'checked' : ''}>
-                <span>${m}</span>
-              </label>
-            `).join('')}
+            ${(() => {
+              const cfg = Store.getConfig();
+              const am = cfg.activeMonths || [9,10,11,12,1,2,3,4,5,6];
+              return MONTHS_SHORT.map((m, i) => {
+                const monthNum = i + 1;
+                const isActive = am.includes(monthNum);
+                return `
+                  <label class="month-check-label ${!isActive ? 'month-inactive' : ''}">
+                    <input type="checkbox" name="months" value="${monthNum}"
+                      ${preMonth === monthNum ? 'checked' : ''}
+                      ${!isActive ? 'disabled' : ''}>
+                    <span>${m}</span>
+                  </label>
+                `;
+              }).join('');
+            })()}
           </div>
         </div>
 
