@@ -555,6 +555,91 @@ function exportYearlyCollections() {
   showToast('Εξαγωγή ετήσιων εισπράξεων ολοκληρώθηκε', 'success');
 }
 
+function exportMembersForGA() {
+  if (!checkSheetJS()) return;
+  const config = Store.getConfig();
+  const members = Store.getMembers()
+    .filter(m => m.status === 'active')
+    .sort((a, b) => (a.memberNumber || 999) - (b.memberNumber || 999));
+
+  const data = members.map((m, i) => ({
+    'Α/Α': i + 1,
+    'Αρ. Μητρώου': m.memberNumber || '',
+    'Επώνυμο': m.lastName,
+    'Όνομα': m.firstName,
+    'Πατρώνυμο': m.fatherName || '',
+    'ΑΦΜ': m.afm || '',
+    'Αρ. Ταυτότητας': m.idNumber || '',
+    'Ημ. Εγγραφής': Utils.formatDate(m.registrationDate),
+    'Κατηγορία': Utils.getCategoryLabel(m.category)
+  }));
+
+  const ws = XLSX.utils.json_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Μέλη Γ.Σ.');
+  XLSX.writeFile(wb, Utils.sanitizeFilename(`${config.clubName}_Μέλη_ΓΣ_${Utils.formatDateISO(new Date())}`) + '.xlsx');
+  showToast('Εξαγωγή λίστας Γ.Σ. ολοκληρώθηκε', 'success');
+}
+
+function exportAnnualStatement(year) {
+  if (!checkSheetJS()) return;
+  const config = Store.getConfig();
+  const transactions = Store.getTransactions().filter(t => {
+    const d = new Date(t.date);
+    return d.getFullYear() === year && t.status !== 'cancelled';
+  });
+
+  // Summary sheet
+  const incomeRows = [];
+  const expenseRows = [];
+  INCOME_CATEGORIES.forEach(c => {
+    const total = transactions.filter(t => t.type === 'income' && t.category === c.id).reduce((s, t) => s + t.amount, 0);
+    if (total > 0) incomeRows.push({ 'Κατηγορία': c.label, 'Ποσό (€)': total });
+  });
+  EXPENSE_CATEGORIES.forEach(c => {
+    const total = transactions.filter(t => t.type === 'expense' && t.category === c.id).reduce((s, t) => s + t.amount, 0);
+    if (total > 0) expenseRows.push({ 'Κατηγορία': c.label, 'Ποσό (€)': total });
+  });
+
+  const totalIncome = incomeRows.reduce((s, r) => s + r['Ποσό (€)'], 0);
+  const totalExpense = expenseRows.reduce((s, r) => s + r['Ποσό (€)'], 0);
+
+  const summary = [
+    { 'Κατηγορία': `ΕΤΗΣΙΟΣ ΑΠΟΛΟΓΙΣΜΟΣ ${year}`, 'Ποσό (€)': '' },
+    { 'Κατηγορία': '', 'Ποσό (€)': '' },
+    { 'Κατηγορία': '=== ΕΣΟΔΑ ===', 'Ποσό (€)': '' },
+    ...incomeRows,
+    { 'Κατηγορία': 'ΣΥΝΟΛΟ ΕΣΟΔΩΝ', 'Ποσό (€)': totalIncome },
+    { 'Κατηγορία': '', 'Ποσό (€)': '' },
+    { 'Κατηγορία': '=== ΕΞΟΔΑ ===', 'Ποσό (€)': '' },
+    ...expenseRows,
+    { 'Κατηγορία': 'ΣΥΝΟΛΟ ΕΞΟΔΩΝ', 'Ποσό (€)': totalExpense },
+    { 'Κατηγορία': '', 'Ποσό (€)': '' },
+    { 'Κατηγορία': 'ΥΠΟΛΟΙΠΟ (Έσοδα - Έξοδα)', 'Ποσό (€)': totalIncome - totalExpense }
+  ];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(summary), 'Απολογισμός');
+
+  // Detail sheet
+  const detail = transactions.sort((a, b) => a.date.localeCompare(b.date)).map((t, i) => {
+    const cats = t.type === 'income' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
+    const cat = cats.find(c => c.id === t.category);
+    return {
+      'Α/Α': i + 1,
+      'Ημερομηνία': Utils.formatDate(t.date),
+      'Τύπος': t.type === 'income' ? 'ΕΣΟΔΟ' : 'ΕΞΟΔΟ',
+      'Κατηγορία': cat ? cat.label : t.category,
+      'Περιγραφή': t.description,
+      'Ποσό (€)': t.type === 'expense' ? -t.amount : t.amount
+    };
+  });
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(detail), 'Αναλυτικά');
+
+  XLSX.writeFile(wb, Utils.sanitizeFilename(`${config.clubName}_Απολογισμός_${year}`) + '.xlsx');
+  showToast(`Εξαγωγή απολογισμού ${year} ολοκληρώθηκε`, 'success');
+}
+
 function exportAssetsExcel() {
   if (!checkSheetJS()) return;
   const assets = Store.getAssets().sort((a, b) => (a.name || '').localeCompare(b.name || '', 'el'));

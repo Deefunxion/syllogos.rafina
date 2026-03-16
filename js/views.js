@@ -690,12 +690,16 @@ const Views = {
         <button class="sub-tab ${State.reportType === 'yearlyCol' ? 'active' : ''}" onclick="State.reportType='yearlyCol'; renderView()">Εισπράξεις/Έτος</button>
         <button class="sub-tab ${State.reportType === 'memberHistory' ? 'active' : ''}" onclick="State.reportType='memberHistory'; renderView()">Ιστορικό Μέλους</button>
         <button class="sub-tab ${State.reportType === 'receipts' ? 'active' : ''}" onclick="State.reportType='receipts'; renderView()"><i class="fa-solid fa-receipt"></i> Αποδείξεις</button>
+        <button class="sub-tab ${State.reportType === 'annualStatement' ? 'active' : ''}" onclick="State.reportType='annualStatement'; renderView()">Ετήσιος Απολογισμός</button>
+        <button class="sub-tab ${State.reportType === 'quarterly' ? 'active' : ''}" onclick="State.reportType='quarterly'; renderView()">Τριμηνιαία</button>
       </div>
 
       ${State.reportType === 'debtors' ? this._reportDebtors() :
         State.reportType === 'monthlyCol' ? this._reportMonthlyCollections() :
         State.reportType === 'yearlyCol' ? this._reportYearlyCollections() :
         State.reportType === 'receipts' ? this._reportReceipts() :
+        State.reportType === 'annualStatement' ? this._reportAnnualStatement() :
+        State.reportType === 'quarterly' ? this._reportQuarterly() :
         this._reportMemberHistory()}
     `;
   },
@@ -977,6 +981,229 @@ const Views = {
           </table>
         </div>
       `}
+    `;
+  },
+
+  _reportAnnualStatement() {
+    const year = State.reportYear;
+    const transactions = Store.getTransactions().filter(t => {
+      const d = new Date(t.date);
+      return d.getFullYear() === year && t.status !== 'cancelled';
+    });
+    const config = Store.getConfig();
+
+    const incomeByCategory = {};
+    INCOME_CATEGORIES.forEach(c => { incomeByCategory[c.id] = { label: c.label, total: 0 }; });
+    transactions.filter(t => t.type === 'income').forEach(t => {
+      if (incomeByCategory[t.category]) incomeByCategory[t.category].total += t.amount;
+      else { incomeByCategory[t.category] = { label: t.category, total: 0 }; incomeByCategory[t.category].total += t.amount; }
+    });
+
+    const expenseByCategory = {};
+    EXPENSE_CATEGORIES.forEach(c => { expenseByCategory[c.id] = { label: c.label, total: 0 }; });
+    transactions.filter(t => t.type === 'expense').forEach(t => {
+      if (expenseByCategory[t.category]) expenseByCategory[t.category].total += t.amount;
+      else { expenseByCategory[t.category] = { label: t.category, total: 0 }; expenseByCategory[t.category].total += t.amount; }
+    });
+
+    const totalIncome = Object.values(incomeByCategory).reduce((s, c) => s + c.total, 0);
+    const totalExpense = Object.values(expenseByCategory).reduce((s, c) => s + c.total, 0);
+    const balance = totalIncome - totalExpense;
+
+    const members = Store.getMembers();
+    const activeCount = members.filter(m => m.status === 'active').length;
+    const newThisYear = members.filter(m => m.registrationDate && new Date(m.registrationDate).getFullYear() === year).length;
+    const departedThisYear = members.filter(m => m.departureDate && new Date(m.departureDate).getFullYear() === year).length;
+
+    const assets = Store.getAssets();
+    const activeAssets = assets.filter(a => a.status === 'active');
+    const assetValue = activeAssets.reduce((s, a) => s + (a.purchaseValue || 0), 0);
+
+    return `
+      <div class="gap-row mb-2">
+        <div class="year-selector">
+          <button onclick="State.reportYear--; renderView()">◂</button>
+          <span class="year-display">${year}</span>
+          <button onclick="State.reportYear++; renderView()">▸</button>
+        </div>
+        <button class="btn btn-outline btn-sm no-print" onclick="exportAnnualStatement(${year})"><i class="fa-solid fa-file-arrow-down"></i> Excel</button>
+        <button class="btn btn-outline btn-sm no-print" onclick="window.print()"><i class="fa-solid fa-print"></i> Εκτύπωση</button>
+      </div>
+
+      <div class="card mb-2" style="text-align:center;padding:20px">
+        <h2 style="margin:0">${Utils.escapeHtml(config.clubName)}</h2>
+        <h3 style="margin:8px 0 0">Ετήσιος Οικονομικός Απολογισμός ${year}</h3>
+      </div>
+
+      <div class="card mb-2">
+        <div class="card-header"><h3>Α. Μέλη</h3></div>
+        <div class="info-row"><span class="info-label">Ενεργά μέλη:</span><span class="info-value">${activeCount}</span></div>
+        <div class="info-row"><span class="info-label">Νέες εγγραφές ${year}:</span><span class="info-value">${newThisYear}</span></div>
+        <div class="info-row"><span class="info-label">Αποχωρήσεις ${year}:</span><span class="info-value">${departedThisYear}</span></div>
+      </div>
+
+      <div class="card mb-2">
+        <div class="card-header"><h3>Β. Έσοδα</h3></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Κατηγορία</th><th class="text-right">Ποσό</th></tr></thead>
+            <tbody>
+              ${Object.values(incomeByCategory).filter(c => c.total > 0).map(c => `
+                <tr><td>${c.label}</td><td class="text-right money">${Utils.formatMoney(c.total)}</td></tr>
+              `).join('')}
+            </tbody>
+            <tfoot><tr style="font-weight:700"><td>Σύνολο Εσόδων</td><td class="text-right money">${Utils.formatMoney(totalIncome)}</td></tr></tfoot>
+          </table>
+        </div>
+      </div>
+
+      <div class="card mb-2">
+        <div class="card-header"><h3>Γ. Έξοδα</h3></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Κατηγορία</th><th class="text-right">Ποσό</th></tr></thead>
+            <tbody>
+              ${Object.values(expenseByCategory).filter(c => c.total > 0).map(c => `
+                <tr><td>${c.label}</td><td class="text-right money">${Utils.formatMoney(c.total)}</td></tr>
+              `).join('')}
+            </tbody>
+            <tfoot><tr style="font-weight:700"><td>Σύνολο Εξόδων</td><td class="text-right money">${Utils.formatMoney(totalExpense)}</td></tr></tfoot>
+          </table>
+        </div>
+      </div>
+
+      <div class="card mb-2">
+        <div class="card-header"><h3>Δ. Αποτέλεσμα Χρήσης</h3></div>
+        <div class="info-row" style="font-size:1.1rem"><span class="info-label">Υπόλοιπο (Έσοδα - Έξοδα):</span><span class="info-value money fw-600" style="color:${balance >= 0 ? 'var(--success)' : 'var(--danger)'}">${Utils.formatMoney(balance)}</span></div>
+      </div>
+
+      <div class="card mb-2">
+        <div class="card-header"><h3>Ε. Περιουσιακά Στοιχεία</h3></div>
+        <div class="info-row"><span class="info-label">Ενεργά στοιχεία:</span><span class="info-value">${activeAssets.length}</span></div>
+        <div class="info-row"><span class="info-label">Συνολική αξία:</span><span class="info-value money">${Utils.formatMoney(assetValue)}</span></div>
+      </div>
+
+      <div style="margin-top:40px;display:flex;justify-content:space-between">
+        <div style="text-align:center">
+          <div style="width:200px;border-top:1px solid #333;padding-top:4px;font-size:0.85rem">Ο Πρόεδρος</div>
+        </div>
+        <div style="text-align:center">
+          <div style="width:200px;border-top:1px solid #333;padding-top:4px;font-size:0.85rem">Ο Ταμίας</div>
+        </div>
+        <div style="text-align:center">
+          <div style="width:200px;border-top:1px solid #333;padding-top:4px;font-size:0.85rem">Ο Γ. Γραμματέας</div>
+        </div>
+      </div>
+    `;
+  },
+
+  _reportQuarterly() {
+    const year = State.reportYear;
+    const quarter = State.reportQuarter || 1;
+    const quarterMonths = { 1: [1,2,3], 2: [4,5,6], 3: [7,8,9], 4: [10,11,12] };
+    const quarterLabels = { 1: "Α' Τρίμηνο (Ιαν-Μαρ)", 2: "Β' Τρίμηνο (Απρ-Ιουν)", 3: "Γ' Τρίμηνο (Ιουλ-Σεπ)", 4: "Δ' Τρίμηνο (Οκτ-Δεκ)" };
+    const months = quarterMonths[quarter];
+    const config = Store.getConfig();
+
+    const transactions = Store.getTransactions().filter(t => {
+      if (t.status === 'cancelled') return false;
+      const d = new Date(t.date);
+      return d.getFullYear() === year && months.includes(d.getMonth() + 1);
+    }).sort((a, b) => a.date.localeCompare(b.date));
+
+    const totalIncome = transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+    const totalExpense = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+    const balance = totalIncome - totalExpense;
+
+    const getCategoryLabel = (tx) => {
+      const cats = tx.type === 'income' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
+      const cat = cats.find(c => c.id === tx.category);
+      return cat ? cat.label : tx.category;
+    };
+
+    return `
+      <div class="gap-row mb-2">
+        <div class="year-selector">
+          <button onclick="State.reportYear--; renderView()">◂</button>
+          <span class="year-display">${year}</span>
+          <button onclick="State.reportYear++; renderView()">▸</button>
+        </div>
+        <div class="sub-tabs" style="gap:0">
+          ${[1,2,3,4].map(q => `<button class="sub-tab ${quarter === q ? 'active' : ''}" onclick="State.reportQuarter=${q}; renderView()">${["Α'","Β'","Γ'","Δ'"][q-1]}</button>`).join('')}
+        </div>
+        <button class="btn btn-outline btn-sm no-print" onclick="window.print()"><i class="fa-solid fa-print"></i> Εκτύπωση</button>
+      </div>
+
+      <div class="card mb-2" style="text-align:center;padding:20px">
+        <h2 style="margin:0">${Utils.escapeHtml(config.clubName)}</h2>
+        <h3 style="margin:8px 0 0">Τριμηνιαία Οικονομική Κατάσταση</h3>
+        <p style="margin:4px 0 0;color:var(--text-muted)">${quarterLabels[quarter]} ${year}</p>
+      </div>
+
+      <div class="stats-grid mb-2">
+        <div class="stat-card">
+          <div class="stat-label">Έσοδα</div>
+          <div class="stat-value" style="color:var(--success)">${Utils.formatMoney(totalIncome)}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Έξοδα</div>
+          <div class="stat-value" style="color:var(--danger)">${Utils.formatMoney(totalExpense)}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Υπόλοιπο</div>
+          <div class="stat-value" style="color:${balance >= 0 ? 'var(--success)' : 'var(--danger)'}">${Utils.formatMoney(balance)}</div>
+        </div>
+      </div>
+
+      ${transactions.length === 0 ? `
+        <div class="empty-state">
+          <span class="empty-icon"><i class="fa-solid fa-book-open"></i></span>
+          <h3>Δεν υπάρχουν εγγραφές</h3>
+          <p>Δεν καταχωρήθηκαν έσοδα/έξοδα για αυτό το τρίμηνο</p>
+        </div>
+      ` : `
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Ημ/νία</th>
+                <th>Τύπος</th>
+                <th>Κατηγορία</th>
+                <th>Περιγραφή</th>
+                <th>Παραστατικό</th>
+                <th class="text-right">Ποσό</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${transactions.map(t => `
+                <tr>
+                  <td>${Utils.formatDate(t.date)}</td>
+                  <td>${t.type === 'income' ? '<span style="color:var(--success)">Έσοδο</span>' : '<span style="color:var(--danger)">Έξοδο</span>'}</td>
+                  <td>${getCategoryLabel(t)}</td>
+                  <td>${Utils.escapeHtml(t.description)}</td>
+                  <td class="text-muted">${Utils.escapeHtml(t.documentNumber || '—')}</td>
+                  <td class="text-right money ${t.type === 'expense' ? 'text-danger' : ''}">${t.type === 'expense' ? '-' : ''}${Utils.formatMoney(t.amount)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+            <tfoot>
+              <tr style="font-weight:700;background:var(--bg)">
+                <td colspan="5">Σύνολο Τριμήνου</td>
+                <td class="text-right money">${Utils.formatMoney(balance)}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      `}
+
+      <div style="margin-top:40px;display:flex;justify-content:space-between">
+        <div style="text-align:center">
+          <div style="width:200px;border-top:1px solid #333;padding-top:4px;font-size:0.85rem">Ο Ταμίας</div>
+        </div>
+        <div style="text-align:center;font-size:0.85rem;color:var(--text-muted)">
+          Ημερομηνία: ${Utils.formatDate(Utils.todayISO())}
+        </div>
+      </div>
     `;
   },
 
@@ -1342,6 +1569,7 @@ const Views = {
         </div>
         <div class="gap-row">
           <button class="btn btn-outline" onclick="exportMembersExcel()"><i class="fa-solid fa-file-arrow-down"></i> Μέλη → Excel</button>
+          <button class="btn btn-outline" onclick="exportMembersForGA()"><i class="fa-solid fa-file-arrow-down"></i> Λίστα Γ.Σ.</button>
           <button class="btn btn-outline" onclick="exportPaymentsExcel()"><i class="fa-solid fa-file-arrow-down"></i> Πληρωμές → Excel</button>
         </div>
       </div>

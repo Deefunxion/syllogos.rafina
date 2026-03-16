@@ -10,6 +10,7 @@ const State = {
   paymentSubTab: 'entry',
   reportType: 'debtors',
   reportYear: new Date().getFullYear(),
+  reportQuarter: Math.ceil((new Date().getMonth() + 1) / 3),
   detailYear: new Date().getFullYear(),
   txFilterType: 'all',
   txFilterYear: new Date().getFullYear(),
