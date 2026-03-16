@@ -1,0 +1,85 @@
+{
+  "version": "2.0",
+  "lastSaved": "2026-03-16T09:52:02.401Z",
+  "members": [
+    {
+      "lastName": "ΠΑΠΑΔΟΠΟΥΛΟΣ",
+      "firstName": "ΔΗΜΗΤΡΙΟΣ",
+      "fatherName": "ΚΩΝΣΤΑΝΤΙΝΟΣ",
+      "idNumber": "ΑΗ 516380",
+      "dateOfBirth": "1977-07-20",
+      "address": "",
+      "phone": "6945049363",
+      "email": "deefunxion@gmail.com",
+      "profession": "Δ/Υ",
+      "registrationDate": "2024-01-01",
+      "category": "adult",
+      "monthlyFee": 35,
+      "status": "active",
+      "notes": "Αντιπρόεδρος του Δ.Σ.",
+      "child": {
+        "lastName": "",
+        "firstName": "",
+        "dateOfBirth": "",
+        "sport": "",
+        "notes": ""
+      },
+      "updatedAt": "2026-03-16T08:40:55.231Z",
+      "id": "8eebe8fa-23c3-4bc6-a260-e38180d9f58c",
+      "createdAt": "2026-03-16T08:40:55.231Z"
+    }
+  ],
+  "payments": [
+    {
+      "id": "b7134e5e-be48-4572-b1e4-e7800217f220",
+      "memberId": "8eebe8fa-23c3-4bc6-a260-e38180d9f58c",
+      "year": 2026,
+      "month": 3,
+      "amount": 35,
+      "paidDate": "2026-03-16",
+      "notes": "",
+      "createdAt": "2026-03-16T08:44:04.546Z"
+    },
+    {
+      "id": "f92cf1cb-309d-450b-b6da-94eee2ad18de",
+      "memberId": "8eebe8fa-23c3-4bc6-a260-e38180d9f58c",
+      "year": 2026,
+      "month": 2,
+      "amount": 35,
+      "paidDate": "2026-03-16",
+      "notes": "",
+      "createdAt": "2026-03-16T08:44:42.610Z"
+    },
+    {
+      "id": "3b0f813c-2552-43b4-a4ba-f9453af147ab",
+      "memberId": "8eebe8fa-23c3-4bc6-a260-e38180d9f58c",
+      "year": 2026,
+      "month": 1,
+      "amount": 35,
+      "paidDate": "2026-03-16",
+      "notes": "",
+      "createdAt": "2026-03-16T08:44:45.634Z"
+    }
+  ],
+  "config": {
+    "clubName": "ΠΑΛΑΙΣΤΙΚΟΣ ΠΟΛ. ΣΥΛΛΟΓΟΣ ΡΑΦΗΝΑΣ ΚΑΙ ΠΕΡΙΧΩΡΩΝ",
+    "currentYear": 2026,
+    "categories": [
+      {
+        "id": "adult",
+        "label": "Ενήλικας",
+        "fee": 35
+      },
+      {
+        "id": "child",
+        "label": "Παιδί",
+        "fee": 15
+      },
+      {
+        "id": "honorary",
+        "label": "Επίτιμο Μέλος",
+        "fee": 0
+      }
+    ]
+  }
+}
