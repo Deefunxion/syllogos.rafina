@@ -121,11 +121,26 @@ const Utils = {
     Store.saveConfig(config);
     return next;
   },
+  getNextMemberNumber() {
+    const config = Store.getConfig();
+    return (config.lastMemberNumber || 0) + 1;
+  },
+  incrementMemberCounter() {
+    const config = Store.getConfig();
+    const next = (config.lastMemberNumber || 0) + 1;
+    config.lastMemberNumber = next;
+    Store.saveConfig(config);
+    return next;
+  },
   // Get receipt number from the Receipt entity
   getReceiptNumberForPayment(payment) {
     const receipts = Store.getReceipts();
     const receipt = receipts.find(r => r.id === payment.receiptId);
     return receipt ? receipt.receiptNumber : (payment.receiptNumber || '?');
+  },
+  getPaymentMethodLabel(methodId) {
+    const method = PAYMENT_METHODS.find(pm => pm.id === methodId);
+    return method ? method.label : methodId || 'Μετρητά';
   },
   sanitizeFilename(name) {
     return name.replace(/[/\\:*?"<>|]/g, '_').trim();

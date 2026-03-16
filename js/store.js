@@ -5,6 +5,12 @@ const MONTHS_GR = ['Ιανουάριος','Φεβρουάριος','Μάρτιο
 const MONTHS_SHORT = ['ΙΑΝ','ΦΕΒ','ΜΑΡ','ΑΠΡ','ΜΑΙ','ΙΟΥΝ',
                       'ΙΟΥΛ','ΑΥΓ','ΣΕΠ','ΟΚΤ','ΝΟΕ','ΔΕΚ'];
 
+const PAYMENT_METHODS = [
+  { id: 'cash', label: 'Μετρητά' },
+  { id: 'bank_transfer', label: 'Τραπεζική Κατάθεση' },
+  { id: 'pos', label: 'POS' }
+];
+
 const LS_MEMBERS  = 'syllógos_members';
 const LS_PAYMENTS = 'syllógos_payments';
 const LS_RECEIPTS = 'syllógos_receipts';
@@ -15,6 +21,7 @@ const DEFAULT_CONFIG = {
   currentYear: new Date().getFullYear(),
   activeMonths: [9, 10, 11, 12, 1, 2, 3, 4, 5, 6],
   lastReceiptNumberByYear: {},
+  lastMemberNumber: 0,
   dataVersion: 2,
   categories: [
     { id: 'adult',    label: 'Ενήλικας',      fee: 25 },

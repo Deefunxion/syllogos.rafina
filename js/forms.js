@@ -49,6 +49,13 @@ function openMemberForm(memberId = null) {
           </div>
           <div class="form-row">
             <div class="form-group">
+              <label>ΑΦΜ <span class="required">*</span></label>
+              <input type="text" class="form-control" name="afm" value="${member ? Utils.escapeHtml(member.afm || '') : ''}" pattern="\\d{9}" maxlength="9" title="9 ψηφία" placeholder="123456789">
+            </div>
+            <div class="form-group"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
               <label>Ημ. Γέννησης</label>
               <input type="date" class="form-control" name="dateOfBirth" value="${member ? member.dateOfBirth || '' : ''}">
             </div>
@@ -90,10 +97,20 @@ function openMemberForm(memberId = null) {
             </div>
             <div class="form-group">
               <label>Κατάσταση</label>
-              <select class="form-control" name="status">
+              <select class="form-control" name="status" onchange="document.getElementById('departure-fields').style.display = this.value === 'inactive' ? '' : 'none'">
                 <option value="active" ${!member || member.status === 'active' ? 'selected' : ''}>Ενεργό</option>
                 <option value="inactive" ${member && member.status === 'inactive' ? 'selected' : ''}>Ανενεργό</option>
               </select>
+            </div>
+          </div>
+          <div class="form-row" id="departure-fields" style="${!member || member.status === 'active' ? 'display:none' : ''}">
+            <div class="form-group">
+              <label>Ημ. Αποχώρησης</label>
+              <input type="date" class="form-control" name="departureDate" value="${member ? member.departureDate || '' : ''}">
+            </div>
+            <div class="form-group">
+              <label>Λόγος Αποχώρησης</label>
+              <input type="text" class="form-control" name="departureReason" value="${member ? Utils.escapeHtml(member.departureReason || '') : ''}" placeholder="π.χ. Αίτηση διαγραφής">
             </div>
           </div>
           <div class="form-group">
@@ -170,6 +187,7 @@ function saveMember(e, editId) {
     firstName: fd.get('firstName').trim(),
     fatherName: fd.get('fatherName')?.trim() || '',
     idNumber: fd.get('idNumber')?.trim() || '',
+    afm: fd.get('afm')?.trim() || '',
     dateOfBirth: fd.get('dateOfBirth') || '',
     address: fd.get('address')?.trim() || '',
     phone: fd.get('phone')?.trim() || '',
@@ -179,6 +197,8 @@ function saveMember(e, editId) {
     category: fd.get('category'),
     monthlyFee: parseFloat(fd.get('monthlyFee')) || 0,
     status: fd.get('status') || 'active',
+    departureDate: fd.get('departureDate') || '',
+    departureReason: fd.get('departureReason')?.trim() || '',
     notes: fd.get('notes')?.trim() || '',
     child: {
       lastName: fd.get('childLastName')?.trim() || '',
@@ -208,6 +228,7 @@ function saveMember(e, editId) {
     showToast('Το μέλος ενημερώθηκε επιτυχώς', 'success');
   } else {
     memberData.id = Utils.generateId();
+    memberData.memberNumber = Utils.incrementMemberCounter();
     memberData.createdAt = now;
     members.push(memberData);
     Store.saveMembers(members);
@@ -283,6 +304,15 @@ function openPaymentForm(memberId = null, preMonth = null, preYear = null) {
             <label>Ημ. Πληρωμής</label>
             <input type="date" class="form-control" name="paidDate" value="${Utils.todayISO()}">
           </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Τρόπος Πληρωμής</label>
+            <select class="form-control" name="paymentMethod">
+              ${PAYMENT_METHODS.map(pm => `<option value="${pm.id}">${pm.label}</option>`).join('')}
+            </select>
+          </div>
+          <div class="form-group"></div>
         </div>
 
         <div class="form-group">
@@ -377,6 +407,7 @@ function savePayment(e) {
   const amount = parseFloat(fd.get('amount'));
   const paidDate = fd.get('paidDate') || Utils.todayISO();
   const notes = fd.get('notes')?.trim() || '';
+  const paymentMethod = fd.get('paymentMethod') || 'cash';
   const months = fd.getAll('months').map(Number);
 
   if (!memberId) { showToast('Επιλέξτε μέλος', 'error'); return; }
@@ -420,6 +451,7 @@ function savePayment(e) {
     memberId,
     amount: totalAmount,
     paidDate,
+    paymentMethod,
     notes,
     status: 'active',
     cancelledAt: null,
@@ -438,6 +470,7 @@ function savePayment(e) {
       month,
       amount,
       paidDate,
+      paymentMethod,
       notes,
       createdAt: new Date().toISOString()
     });

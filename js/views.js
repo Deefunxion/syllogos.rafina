@@ -200,7 +200,7 @@ const Views = {
           <table>
             <thead>
               <tr>
-                <th>Α/Α</th>
+                <th>Αρ.Μ.</th>
                 <th>Επώνυμο - Όνομα</th>
                 <th>Αθλούμενος</th>
                 <th>Κατηγορία</th>
@@ -212,7 +212,7 @@ const Views = {
             <tbody>
               ${filtered.map((m, i) => `
                 <tr class="clickable-row" ondblclick="navigate('memberDetail', {memberId:'${m.id}'})">
-                  <td>${i + 1}</td>
+                  <td>${m.memberNumber || '—'}</td>
                   <td><strong>${Utils.escapeHtml(Utils.getMemberFullName(m))}</strong></td>
                   <td>${Utils.escapeHtml(Utils.getChildFullName(m))}${m.child?.sport ? ` <span class="text-muted">(${Utils.escapeHtml(m.child.sport)})</span>` : ''}</td>
                   <td>${Utils.escapeHtml(Utils.getCategoryLabel(m.category))}</td>
@@ -317,10 +317,12 @@ const Views = {
               ${member.status === 'active' ? '● Ενεργό' : '○ Ανενεργό'}
             </span>
           </div>
+          <div class="info-row"><span class="info-label">Αρ. Μητρώου:</span><span class="info-value"><strong>#${member.memberNumber || '—'}</strong></span></div>
           <div class="info-row"><span class="info-label">Επώνυμο:</span><span class="info-value">${Utils.escapeHtml(member.lastName)}</span></div>
           <div class="info-row"><span class="info-label">Όνομα:</span><span class="info-value">${Utils.escapeHtml(member.firstName)}</span></div>
           <div class="info-row"><span class="info-label">Πατρώνυμο:</span><span class="info-value">${Utils.escapeHtml(member.fatherName || '—')}</span></div>
           <div class="info-row"><span class="info-label">Αρ. Ταυτότητας:</span><span class="info-value">${Utils.escapeHtml(member.idNumber || '—')}</span></div>
+          ${member.afm ? `<div class="info-row"><span class="info-label">ΑΦΜ:</span><span class="info-value">${Utils.escapeHtml(member.afm)}</span></div>` : ''}
           <div class="info-row"><span class="info-label">Ημ. Γέννησης:</span><span class="info-value">${Utils.formatDate(member.dateOfBirth)}</span></div>
           <div class="info-row"><span class="info-label">Διεύθυνση:</span><span class="info-value">${Utils.escapeHtml(member.address || '—')}</span></div>
           <div class="info-row"><span class="info-label">Τηλέφωνο:</span><span class="info-value">${Utils.escapeHtml(member.phone || '—')}</span></div>
@@ -329,6 +331,8 @@ const Views = {
           <div class="info-row"><span class="info-label">Ημ. Εγγραφής:</span><span class="info-value">${Utils.formatDate(member.registrationDate)}</span></div>
           <div class="info-row"><span class="info-label">Κατηγορία:</span><span class="info-value">${Utils.escapeHtml(Utils.getCategoryLabel(member.category))}</span></div>
           <div class="info-row"><span class="info-label">Εισφορά:</span><span class="info-value money">${Utils.formatMoney(member.monthlyFee)}</span></div>
+          ${member.departureDate ? `<div class="info-row"><span class="info-label">Ημ. Αποχώρησης:</span><span class="info-value">${Utils.formatDate(member.departureDate)}</span></div>` : ''}
+          ${member.departureReason ? `<div class="info-row"><span class="info-label">Λόγος:</span><span class="info-value">${Utils.escapeHtml(member.departureReason)}</span></div>` : ''}
           ${member.notes ? `<div class="info-row"><span class="info-label">Σημειώσεις:</span><span class="info-value">${Utils.escapeHtml(member.notes)}</span></div>` : ''}
         </div>
 

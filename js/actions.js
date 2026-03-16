@@ -158,6 +158,10 @@ function showReceiptById(receiptId) {
             <span class="receipt-val">${Utils.escapeHtml(childName)}</span>
           </div>` : ''}
           <div class="receipt-row">
+            <span class="receipt-label">Τρόπος Πληρωμής:</span>
+            <span class="receipt-val">${Utils.getPaymentMethodLabel(receipt.paymentMethod)}</span>
+          </div>
+          <div class="receipt-row">
             <span class="receipt-label">Περίοδος:</span>
             <span class="receipt-val">${monthsList} ${receipt.year}</span>
           </div>
@@ -343,17 +347,20 @@ function exportMembersExcel() {
   if (!checkSheetJS()) return;
   const members = Store.getMembers().sort((a,b) => a.lastName.localeCompare(b.lastName, 'el'));
   const data = members.map((m, i) => ({
-    'Α/Α': i + 1,
+    'Αρ. Μητρώου': m.memberNumber || '',
     'Επώνυμο': m.lastName,
     'Όνομα': m.firstName,
     'Πατρώνυμο': m.fatherName || '',
     'Αρ. Ταυτότητας': m.idNumber || '',
+    'ΑΦΜ': m.afm || '',
     'Κατηγορία': Utils.getCategoryLabel(m.category),
     'Τηλέφωνο': m.phone || '',
     'Email': m.email || '',
     'Ημ. Εγγραφής': Utils.formatDate(m.registrationDate),
     'Εισφορά (€)': m.monthlyFee,
     'Κατάσταση': m.status === 'active' ? 'Ενεργό' : 'Ανενεργό',
+    'Ημ. Αποχώρησης': Utils.formatDate(m.departureDate),
+    'Λόγος Αποχώρησης': m.departureReason || '',
     'Παιδί (Όνομα)': Utils.getChildFullName(m),
     'Παιδί (Άθλημα)': m.child?.sport || ''
   }));
@@ -383,6 +390,7 @@ function exportPaymentsExcel() {
       'Έτος': p.year,
       'Μήνας': Utils.getMonthName(p.month),
       'Ποσό (€)': p.amount,
+      'Τρόπος Πληρωμής': Utils.getPaymentMethodLabel(p.paymentMethod),
       'Κατάσταση': status,
       'Σημειώσεις': p.notes || ''
     };
@@ -417,6 +425,7 @@ function exportReceiptsExcel(year) {
       'Παιδί': m ? Utils.getChildFullName(m) : '',
       'Μήνες': monthsList,
       'Ποσό (€)': r.amount,
+      'Τρόπος Πληρωμής': Utils.getPaymentMethodLabel(r.paymentMethod),
       'Κατάσταση': isCancelled ? 'ΑΚΥΡΟ' : 'Ενεργή',
       'Σημειώσεις': r.notes || ''
     };
