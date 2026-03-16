@@ -16,7 +16,7 @@ const State = {
 // ─── TOAST ────────────────────────────────────────────
 function showToast(message, type = 'info') {
   const container = document.getElementById('toast-container');
-  const icons = { success: '✓', error: '✗', warning: '⚠', info: 'ℹ' };
+  const icons = { success: '<i class="fa-solid fa-check"></i>', error: '<i class="fa-solid fa-xmark"></i>', warning: '<i class="fa-solid fa-triangle-exclamation"></i>', info: '<i class="fa-solid fa-circle-info"></i>' };
   const toast = document.createElement('div');
   toast.className = `toast ${type}`;
   toast.innerHTML = `<span>${icons[type] || 'ℹ'}</span> ${Utils.escapeHtml(message)}`;
@@ -86,7 +86,7 @@ const Modals = {
       </div>
       <div class="modal-body">
         <div class="confirm-body">
-          <span class="confirm-icon">⚠️</span>
+          <span class="confirm-icon"><i class="fa-solid fa-triangle-exclamation" style="color:var(--accent)"></i></span>
           <p>${message}</p>
           ${warningText ? `<p class="confirm-warning">${warningText}</p>` : ''}
         </div>

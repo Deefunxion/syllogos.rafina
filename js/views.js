@@ -37,40 +37,40 @@ const Views = {
 
     return `
       <div class="view-header">
-        <h2>📊 Αρχική</h2>
+        <h2><i class="fa-solid fa-gauge-high"></i> Αρχική</h2>
       </div>
 
       ${!FileStorage.isConnected() && FileStorage.isSupported() ? `
         <div class="alert alert-warning mb-2 no-print" style="cursor:pointer" onclick="showFileConnectModal()">
-          ⚠️ <strong>Τα δεδομένα δεν αποθηκεύονται σε αρχείο.</strong> 
+          <i class="fa-solid fa-triangle-exclamation"></i> <strong>Τα δεδομένα δεν αποθηκεύονται σε αρχείο.</strong> 
           Κάντε κλικ εδώ για να συνδέσετε ένα αρχείο μόνιμης αποθήκευσης.
         </div>
       ` : ''}
 
       <div class="stats-grid">
         <div class="stat-card">
-          <div class="stat-icon blue">👥</div>
+          <div class="stat-icon blue"><i class="fa-solid fa-users"></i></div>
           <div class="stat-info">
             <h4>Ενεργά Μέλη</h4>
             <div class="stat-value">${totalMembers}</div>
           </div>
         </div>
         <div class="stat-card">
-          <div class="stat-icon red">⚠️</div>
+          <div class="stat-icon red"><i class="fa-solid fa-triangle-exclamation"></i></div>
           <div class="stat-info">
             <h4>Ανεξόφλητα (${MONTHS_SHORT[month - 1]})</h4>
             <div class="stat-value ${unpaidCount > 0 ? 'danger' : ''}">${unpaidCount}</div>
           </div>
         </div>
         <div class="stat-card">
-          <div class="stat-icon green">💶</div>
+          <div class="stat-icon green"><i class="fa-solid fa-coins"></i></div>
           <div class="stat-info">
             <h4>Εισπράξεις Μήνα</h4>
             <div class="stat-value money">${Utils.formatMoney(monthTotal)}</div>
           </div>
         </div>
         <div class="stat-card">
-          <div class="stat-icon gold">📅</div>
+          <div class="stat-icon gold"><i class="fa-solid fa-calendar-days"></i></div>
           <div class="stat-info">
             <h4>Εισπράξεις Έτους</h4>
             <div class="stat-value money">${Utils.formatMoney(yearTotal)}</div>
@@ -80,10 +80,10 @@ const Views = {
 
       <div class="quick-actions no-print">
         <button class="quick-action-btn" onclick="openMemberForm()">
-          <span class="qa-icon">➕</span> Νέο Μέλος
+          <span class="qa-icon"><i class="fa-solid fa-user-plus"></i></span> Νέο Μέλος
         </button>
         <button class="quick-action-btn" onclick="openPaymentForm()">
-          <span class="qa-icon">💶</span> Καταχώρηση Πληρωμής
+          <span class="qa-icon"><i class="fa-solid fa-coins"></i></span> Καταχώρηση Πληρωμής
         </button>
       </div>
 
@@ -93,7 +93,7 @@ const Views = {
         </div>
         ${recentPayments.length === 0 ? `
           <div class="empty-state">
-            <span class="empty-icon">💸</span>
+            <span class="empty-icon"><i class="fa-solid fa-money-bill-transfer"></i></span>
             <h3>Δεν υπάρχουν πληρωμές</h3>
             <p>Ξεκινήστε καταχωρώντας πληρωμές μελών</p>
           </div>
@@ -164,9 +164,9 @@ const Views = {
 
     return `
       <div class="view-header">
-        <h2>👥 Μητρώο Μελών</h2>
+        <h2><i class="fa-solid fa-id-card"></i> Μητρώο Μελών</h2>
         <div class="view-header-actions no-print">
-          <button class="btn btn-primary" onclick="openMemberForm()">➕ Νέο Μέλος</button>
+          <button class="btn btn-primary" onclick="openMemberForm()"><i class="fa-solid fa-plus"></i> Νέο Μέλος</button>
         </div>
       </div>
 
@@ -189,10 +189,10 @@ const Views = {
 
       ${filtered.length === 0 ? `
         <div class="empty-state">
-          <span class="empty-icon">👤</span>
+          <span class="empty-icon"><i class="fa-solid fa-user"></i></span>
           <h3>Δεν βρέθηκαν μέλη</h3>
           <p>${members.length === 0 ? 'Προσθέστε το πρώτο μέλος του συλλόγου' : 'Δοκιμάστε διαφορετικά φίλτρα'}</p>
-          ${members.length === 0 ? '<button class="btn btn-primary" onclick="openMemberForm()">➕ Νέο Μέλος</button>' : ''}
+          ${members.length === 0 ? '<button class="btn btn-primary" onclick="openMemberForm()"><i class="fa-solid fa-plus"></i> Νέο Μέλος</button>' : ''}
         </div>
       ` : `
         <div class="mb-1 text-muted" style="font-size:0.82rem">${filtered.length} μέλ${filtered.length === 1 ? 'ος' : 'η'}</div>
@@ -219,9 +219,9 @@ const Views = {
                   <td class="text-right money">${Utils.formatMoney(m.monthlyFee)}</td>
                   <td><span class="badge ${m.status === 'active' ? 'badge-active' : 'badge-inactive'}">${m.status === 'active' ? '● Ενεργό' : '○ Ανενεργό'}</span></td>
                   <td class="text-center no-print">
-                    <button class="btn btn-ghost btn-sm" onclick="navigate('memberDetail', {memberId:'${m.id}'})" title="Προβολή">👁️</button>
-                    <button class="btn btn-ghost btn-sm" onclick="openMemberForm('${m.id}')" title="Επεξεργασία">✏️</button>
-                    <button class="btn btn-ghost btn-sm" onclick="deleteMember('${m.id}')" title="Διαγραφή">🗑️</button>
+                    <button class="btn btn-ghost btn-sm" onclick="navigate('memberDetail', {memberId:'${m.id}'})" title="Προβολή"><i class="fa-solid fa-eye"></i></button>
+                    <button class="btn btn-ghost btn-sm" onclick="openMemberForm('${m.id}')" title="Επεξεργασία"><i class="fa-solid fa-pen-to-square"></i></button>
+                    <button class="btn btn-ghost btn-sm" onclick="deleteMember('${m.id}')" title="Διαγραφή"><i class="fa-solid fa-trash-can"></i></button>
                   </td>
                 </tr>
               `).join('')}
@@ -298,13 +298,13 @@ const Views = {
     return `
       <div class="view-header">
         <h2>
-          <a onclick="navigate('members')" style="cursor:pointer;color:var(--text-muted);text-decoration:none">👥 Μέλη</a>
+          <a onclick="navigate('members')" style="cursor:pointer;color:var(--text-muted);text-decoration:none"><i class="fa-solid fa-users"></i> Μέλη</a>
           <span style="color:var(--text-muted);margin:0 8px">›</span>
           ${Utils.escapeHtml(Utils.getMemberFullName(member))}
         </h2>
         <div class="view-header-actions no-print">
-          <button class="btn btn-outline" onclick="openMemberForm('${member.id}')">✏️ Επεξεργασία</button>
-          <button class="btn btn-danger btn-sm" onclick="deleteMember('${member.id}')">🗑️ Διαγραφή</button>
+          <button class="btn btn-outline" onclick="openMemberForm('${member.id}')"><i class="fa-solid fa-pen-to-square"></i> Επεξεργασία</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteMember('${member.id}')"><i class="fa-solid fa-trash-can"></i> Διαγραφή</button>
         </div>
       </div>
 
@@ -312,7 +312,7 @@ const Views = {
         <!-- Member Info -->
         <div class="card">
           <div class="card-header">
-            <h3>👤 Στοιχεία Μέλους</h3>
+            <h3><i class="fa-solid fa-user"></i> Στοιχεία Μέλους</h3>
             <span class="badge ${member.status === 'active' ? 'badge-active' : 'badge-inactive'}">
               ${member.status === 'active' ? '● Ενεργό' : '○ Ανενεργό'}
             </span>
@@ -335,7 +335,7 @@ const Views = {
         <!-- Child Info -->
         <div class="card">
           <div class="card-header">
-            <h3>🧒 Αθλούμενος</h3>
+            <h3><i class="fa-solid fa-child"></i> Αθλούμενος</h3>
           </div>
           ${member.child && member.child.firstName ? `
             <div class="info-row"><span class="info-label">Επώνυμο:</span><span class="info-value">${Utils.escapeHtml(member.child.lastName || member.lastName)}</span></div>
@@ -354,7 +354,7 @@ const Views = {
       <!-- Payment Grid -->
       <div class="card">
         <div class="card-header">
-          <h3>💶 Πληρωμές</h3>
+          <h3><i class="fa-solid fa-coins"></i> Πληρωμές</h3>
           <div class="year-selector">
             <button onclick="State.detailYear--; renderView()">◂</button>
             <span class="year-display">${year}</span>
@@ -364,7 +364,7 @@ const Views = {
 
         ${debt.months.length > 0 ? `
           <div class="alert alert-danger mb-2">
-            ⚠️ Οφειλή ${year}: ${debt.months.length} μήν${debt.months.length === 1 ? 'ας' : 'ες'} — ${Utils.formatMoney(debt.totalAmount)}
+            <i class="fa-solid fa-triangle-exclamation"></i> Οφειλή ${year}: ${debt.months.length} μήν${debt.months.length === 1 ? 'ας' : 'ες'} — ${Utils.formatMoney(debt.totalAmount)}
           </div>
         ` : ''}
 
@@ -404,8 +404,8 @@ const Views = {
                     <td class="text-right money"${isCancelled ? ' style="text-decoration:line-through"' : ''}>${Utils.formatMoney(p.amount)}</td>
                     <td class="text-muted">${Utils.escapeHtml(p.notes || '')}</td>
                     <td class="text-center no-print">
-                      ${receipt ? `<button class="btn btn-ghost btn-sm" onclick="showReceiptById('${receipt.id}')" title="Απόδειξη">🧾</button>` : ''}
-                      ${receipt && !isCancelled ? `<button class="btn btn-ghost btn-sm" onclick="cancelReceipt('${receipt.id}')" title="Ακύρωση">🗑️</button>` : ''}
+                      ${receipt ? `<button class="btn btn-ghost btn-sm" onclick="showReceiptById('${receipt.id}')" title="Απόδειξη"><i class="fa-solid fa-receipt"></i></button>` : ''}
+                      ${receipt && !isCancelled ? `<button class="btn btn-ghost btn-sm" onclick="cancelReceipt('${receipt.id}')" title="Ακύρωση"><i class="fa-solid fa-trash-can"></i></button>` : ''}
                     </td>
                   </tr>`;
                 }).join('')}
@@ -421,9 +421,9 @@ const Views = {
   payments() {
     return `
       <div class="view-header">
-        <h2>💶 Πληρωμές</h2>
+        <h2><i class="fa-solid fa-coins"></i> Πληρωμές</h2>
         <div class="view-header-actions no-print">
-          <button class="btn btn-success" onclick="openPaymentForm()">➕ Νέα Πληρωμή</button>
+          <button class="btn btn-success" onclick="openPaymentForm()"><i class="fa-solid fa-plus"></i> Νέα Πληρωμή</button>
         </div>
       </div>
 
@@ -450,7 +450,7 @@ const Views = {
     return `
       <div class="quick-actions no-print">
         <button class="quick-action-btn" onclick="openPaymentForm()">
-          <span class="qa-icon">💶</span> Καταχώρηση Πληρωμής
+          <span class="qa-icon"><i class="fa-solid fa-coins"></i></span> Καταχώρηση Πληρωμής
         </button>
       </div>
 
@@ -490,8 +490,8 @@ const Views = {
                     <td class="text-right money"${isCancelled ? ' style="text-decoration:line-through"' : ''}>${Utils.formatMoney(p.amount)}</td>
                     <td class="text-muted">${Utils.escapeHtml(p.notes || '')}</td>
                     <td class="text-center no-print">
-                      ${receipt ? `<button class="btn btn-ghost btn-sm" onclick="showReceiptById('${receipt.id}')" title="Απόδειξη">🧾</button>` : ''}
-                      ${receipt && !isCancelled ? `<button class="btn btn-ghost btn-sm" onclick="cancelReceipt('${receipt.id}')" title="Ακύρωση">🗑️</button>` : ''}
+                      ${receipt ? `<button class="btn btn-ghost btn-sm" onclick="showReceiptById('${receipt.id}')" title="Απόδειξη"><i class="fa-solid fa-receipt"></i></button>` : ''}
+                      ${receipt && !isCancelled ? `<button class="btn btn-ghost btn-sm" onclick="cancelReceipt('${receipt.id}')" title="Ακύρωση"><i class="fa-solid fa-trash-can"></i></button>` : ''}
                     </td>
                   </tr>`;
                 }).join('')}
@@ -633,7 +633,7 @@ const Views = {
           <span class="year-display">${year}</span>
           <button onclick="State.currentYear++; renderView()">▸</button>
         </div>
-        <button class="btn btn-outline btn-sm no-print" onclick="exportAnnualGrid(${year})">📥 Excel</button>
+        <button class="btn btn-outline btn-sm no-print" onclick="exportAnnualGrid(${year})"><i class="fa-solid fa-file-arrow-down"></i> Excel</button>
       </div>
 
       <div class="annual-grid-wrap">
@@ -677,7 +677,7 @@ const Views = {
   reports() {
     return `
       <div class="view-header">
-        <h2>📈 Αναφορές</h2>
+        <h2><i class="fa-solid fa-square-poll-vertical"></i> Αναφορές</h2>
       </div>
 
       <div class="sub-tabs no-print">
@@ -685,7 +685,7 @@ const Views = {
         <button class="sub-tab ${State.reportType === 'monthlyCol' ? 'active' : ''}" onclick="State.reportType='monthlyCol'; renderView()">Εισπράξεις/Μήνα</button>
         <button class="sub-tab ${State.reportType === 'yearlyCol' ? 'active' : ''}" onclick="State.reportType='yearlyCol'; renderView()">Εισπράξεις/Έτος</button>
         <button class="sub-tab ${State.reportType === 'memberHistory' ? 'active' : ''}" onclick="State.reportType='memberHistory'; renderView()">Ιστορικό Μέλους</button>
-        <button class="sub-tab ${State.reportType === 'receipts' ? 'active' : ''}" onclick="State.reportType='receipts'; renderView()">🧾 Αποδείξεις</button>
+        <button class="sub-tab ${State.reportType === 'receipts' ? 'active' : ''}" onclick="State.reportType='receipts'; renderView()"><i class="fa-solid fa-receipt"></i> Αποδείξεις</button>
       </div>
 
       ${State.reportType === 'debtors' ? this._reportDebtors() :
@@ -721,12 +721,12 @@ const Views = {
           <span class="year-display">${year}</span>
           <button onclick="State.reportYear++; renderView()">▸</button>
         </div>
-        <button class="btn btn-outline btn-sm no-print" onclick="exportDebtors(${year})">📥 Excel</button>
-        <button class="btn btn-outline btn-sm no-print" onclick="window.print()">🖨️ Εκτύπωση</button>
+        <button class="btn btn-outline btn-sm no-print" onclick="exportDebtors(${year})"><i class="fa-solid fa-file-arrow-down"></i> Excel</button>
+        <button class="btn btn-outline btn-sm no-print" onclick="window.print()"><i class="fa-solid fa-print"></i> Εκτύπωση</button>
       </div>
 
       ${debtors.length === 0 ? `
-        <div class="alert alert-success">✓ Δεν υπάρχουν οφειλέτες για το ${year}!</div>
+        <div class="alert alert-success"><i class="fa-solid fa-check"></i> Δεν υπάρχουν οφειλέτες για το ${year}!</div>
       ` : `
         <div class="alert alert-danger mb-2">
           ${debtors.length} μέλ${debtors.length === 1 ? 'ος' : 'η'} με οφειλές — Σύνολο: ${Utils.formatMoney(debtors.reduce((s, d) => s + d.total, 0))}
@@ -782,7 +782,7 @@ const Views = {
           <span class="year-display">${year}</span>
           <button onclick="State.reportYear++; renderView()">▸</button>
         </div>
-        <button class="btn btn-outline btn-sm no-print" onclick="exportMonthlyCollections(${year})">📥 Excel</button>
+        <button class="btn btn-outline btn-sm no-print" onclick="exportMonthlyCollections(${year})"><i class="fa-solid fa-file-arrow-down"></i> Excel</button>
       </div>
 
       <div class="card mb-2">
@@ -844,12 +844,12 @@ const Views = {
 
     return `
       <div class="gap-row mb-2">
-        <button class="btn btn-outline btn-sm no-print" onclick="exportYearlyCollections()">📥 Excel</button>
+        <button class="btn btn-outline btn-sm no-print" onclick="exportYearlyCollections()"><i class="fa-solid fa-file-arrow-down"></i> Excel</button>
       </div>
 
       ${years.length === 0 ? `
         <div class="empty-state">
-          <span class="empty-icon">📊</span>
+          <span class="empty-icon"><i class="fa-solid fa-chart-simple"></i></span>
           <h3>Δεν υπάρχουν δεδομένα</h3>
           <p>Καταχωρήστε πληρωμές για να δείτε ετήσιες εισπράξεις</p>
         </div>
@@ -924,7 +924,7 @@ const Views = {
           <span class="year-display">${year}</span>
           <button onclick="State.reportYear++; renderView()">▸</button>
         </div>
-        <button class="btn btn-outline btn-sm no-print" onclick="exportReceiptsExcel(${year})">📥 Excel</button>
+        <button class="btn btn-outline btn-sm no-print" onclick="exportReceiptsExcel(${year})"><i class="fa-solid fa-file-arrow-down"></i> Excel</button>
       </div>
 
       <div class="mb-1">
@@ -946,7 +946,7 @@ const Views = {
                 <th>Μέλος</th>
                 <th>Μήνες</th>
                 <th class="text-right">Ποσό</th>
-                <th class="text-center no-print">🧾</th>
+                <th class="text-center no-print"><i class="fa-solid fa-receipt"></i></th>
               </tr>
             </thead>
             <tbody>
@@ -964,8 +964,8 @@ const Views = {
                   <td>${monthsList} ${r.year}</td>
                   <td class="text-right money">${Utils.formatMoney(r.amount)}</td>
                   <td class="text-center no-print">
-                    <button class="btn btn-ghost btn-sm" onclick="showReceiptById('${r.id}')">🧾</button>
-                    ${!isCancelled ? `<button class="btn btn-ghost btn-sm" onclick="cancelReceipt('${r.id}')">❌</button>` : ''}
+                    <button class="btn btn-ghost btn-sm" onclick="showReceiptById('${r.id}')"><i class="fa-solid fa-receipt"></i></button>
+                    ${!isCancelled ? `<button class="btn btn-ghost btn-sm" onclick="cancelReceipt('${r.id}')"><i class="fa-solid fa-ban"></i></button>` : ''}
                   </td>
                 </tr>`;
               }).join('')}
@@ -985,35 +985,35 @@ const Views = {
 
     return `
       <div class="view-header">
-        <h2>⚙️ Ρυθμίσεις</h2>
+        <h2><i class="fa-solid fa-wrench"></i> Ρυθμίσεις</h2>
       </div>
 
       <!-- File Storage Status -->
       <div class="card settings-section">
         <div class="card-header">
-          <h3>📁 Αρχείο Δεδομένων</h3>
+          <h3><i class="fa-solid fa-hard-drive"></i> Αρχείο Δεδομένων</h3>
           ${FileStorage.isConnected() 
             ? '<span class="badge badge-active">● Συνδεδεμένο</span>' 
             : '<span class="badge badge-inactive">○ Αποσυνδεδεμένο</span>'}
         </div>
         ${FileStorage.isConnected() ? `
           <div class="alert alert-success mb-2">
-            ✓ Τα δεδομένα αποθηκεύονται αυτόματα στο αρχείο: <strong>${Utils.escapeHtml(FileStorage.fileName)}</strong>
+            <i class="fa-solid fa-check"></i> Τα δεδομένα αποθηκεύονται αυτόματα στο αρχείο: <strong>${Utils.escapeHtml(FileStorage.fileName)}</strong>
           </div>
           <div class="gap-row">
-            <button class="btn btn-primary" onclick="FileStorage.saveNow()">💾 Αποθήκευση Τώρα</button>
-            <button class="btn btn-outline" onclick="FileStorage.switchFile()">📂 Αλλαγή Αρχείου</button>
+            <button class="btn btn-primary" onclick="FileStorage.saveNow()"><i class="fa-solid fa-floppy-disk"></i> Αποθήκευση Τώρα</button>
+            <button class="btn btn-outline" onclick="FileStorage.switchFile()"><i class="fa-solid fa-folder-open"></i> Αλλαγή Αρχείου</button>
             <button class="btn btn-danger btn-sm" onclick="FileStorage.disconnect(); renderView()">Αποσύνδεση</button>
           </div>
         ` : `
           <div class="alert alert-warning mb-2">
-            ⚠️ Τα δεδομένα αποθηκεύονται μόνο στον browser (localStorage) — μπορεί να χαθούν!
+            <i class="fa-solid fa-triangle-exclamation"></i> Τα δεδομένα αποθηκεύονται μόνο στον browser (localStorage) — μπορεί να χαθούν!
             ${FileStorage.isSupported() ? '<br>Συνδέστε ένα αρχείο για μόνιμη αποθήκευση.' : '<br><strong>Ο browser σας δεν υποστηρίζει File System API.</strong> Χρησιμοποιήστε Chrome/Edge.'}
           </div>
           ${FileStorage.isSupported() ? `
             <div class="gap-row">
-              <button class="btn btn-success" onclick="createNewFileFromModal()">📄 Νέο Αρχείο</button>
-              <button class="btn btn-primary" onclick="openExistingFileFromModal()">📂 Άνοιγμα Αρχείου</button>
+              <button class="btn btn-success" onclick="createNewFileFromModal()"><i class="fa-solid fa-file"></i> Νέο Αρχείο</button>
+              <button class="btn btn-primary" onclick="openExistingFileFromModal()"><i class="fa-solid fa-folder-open"></i> Άνοιγμα Αρχείου</button>
             </div>
           ` : ''}
         `}
@@ -1034,13 +1034,13 @@ const Views = {
             <input type="number" class="form-control" id="setting-default-year" value="${config.currentYear}" min="2015" max="2035">
           </div>
         </div>
-        <button class="btn btn-primary mt-1" onclick="saveGeneralSettings()">💾 Αποθήκευση</button>
+        <button class="btn btn-primary mt-1" onclick="saveGeneralSettings()"><i class="fa-solid fa-floppy-disk"></i> Αποθήκευση</button>
       </div>
 
       <!-- Active Months -->
       <div class="card settings-section">
         <div class="card-header">
-          <h3>📅 Ενεργοί Μήνες Χρέωσης</h3>
+          <h3><i class="fa-solid fa-calendar-days"></i> Ενεργοί Μήνες Χρέωσης</h3>
         </div>
         <p class="text-muted mb-2" style="font-size:0.82rem">Επιλέξτε τους μήνες κατά τους οποίους γίνεται χρέωση εισφοράς</p>
         <div class="month-check-grid">
@@ -1055,7 +1055,7 @@ const Views = {
             `;
           }).join('')}
         </div>
-        <button class="btn btn-primary mt-1" onclick="saveActiveMonths()">💾 Αποθήκευση</button>
+        <button class="btn btn-primary mt-1" onclick="saveActiveMonths()"><i class="fa-solid fa-floppy-disk"></i> Αποθήκευση</button>
       </div>
 
       <!-- Categories -->
@@ -1063,7 +1063,7 @@ const Views = {
         <div class="card-header">
           <h3>Κατηγορίες & Εισφορές</h3>
         </div>
-        <p class="text-muted mb-2" style="font-size:0.82rem">⚠️ Η αλλαγή εισφοράς ΔΕΝ αλλάζει αναδρομικά τις ήδη καταχωρημένες πληρωμές</p>
+        <p class="text-muted mb-2" style="font-size:0.82rem"><i class="fa-solid fa-triangle-exclamation"></i> Η αλλαγή εισφοράς ΔΕΝ αλλάζει αναδρομικά τις ήδη καταχωρημένες πληρωμές</p>
         <div class="table-wrap mb-2" style="border:none;box-shadow:none">
           <table>
             <thead>
@@ -1085,7 +1085,7 @@ const Views = {
                     <input type="number" class="form-control" value="${c.fee}" step="0.01" min="0" data-cat-id="${c.id}" data-field="fee" style="max-width:120px;text-align:right">
                   </td>
                   <td class="text-center cat-actions">
-                    <button class="btn btn-ghost btn-sm" onclick="deleteCategory('${c.id}')" title="Διαγραφή">🗑️</button>
+                    <button class="btn btn-ghost btn-sm" onclick="deleteCategory('${c.id}')" title="Διαγραφή"><i class="fa-solid fa-trash-can"></i></button>
                   </td>
                 </tr>
               `).join('')}
@@ -1093,8 +1093,8 @@ const Views = {
           </table>
         </div>
         <div class="gap-row">
-          <button class="btn btn-outline btn-sm" onclick="addCategory()">➕ Νέα Κατηγορία</button>
-          <button class="btn btn-primary btn-sm" onclick="saveCategories()">💾 Αποθήκευση Κατηγοριών</button>
+          <button class="btn btn-outline btn-sm" onclick="addCategory()"><i class="fa-solid fa-plus"></i> Νέα Κατηγορία</button>
+          <button class="btn btn-primary btn-sm" onclick="saveCategories()"><i class="fa-solid fa-floppy-disk"></i> Αποθήκευση Κατηγοριών</button>
         </div>
       </div>
 
@@ -1104,15 +1104,15 @@ const Views = {
           <h3>Αντίγραφα Ασφαλείας</h3>
         </div>
         <div class="gap-row mb-2">
-          <button class="btn btn-success" onclick="Store.exportBackup()">💾 Αποθήκευση Αντιγράφου</button>
-          <button class="btn btn-warning" onclick="document.getElementById('import-file').click()">📂 Επαναφορά από Αρχείο</button>
+          <button class="btn btn-success" onclick="Store.exportBackup()"><i class="fa-solid fa-floppy-disk"></i> Αποθήκευση Αντιγράφου</button>
+          <button class="btn btn-warning" onclick="document.getElementById('import-file').click()"><i class="fa-solid fa-folder-open"></i> Επαναφορά από Αρχείο</button>
           <input type="file" id="import-file" accept=".json" style="display:none" onchange="importBackup(this.files[0])">
         </div>
         <div class="alert alert-warning">
-          ⚠️ Η επαναφορά θα αντικαταστήσει ΟΛΑ τα υπάρχοντα δεδομένα
+          <i class="fa-solid fa-triangle-exclamation"></i> Η επαναφορά θα αντικαταστήσει ΟΛΑ τα υπάρχοντα δεδομένα
         </div>
         <div class="alert alert-warning mt-1" style="font-size:0.82rem">
-          🔒 Τα δεδομένα αποθηκεύονται χωρίς κρυπτογράφηση. Φυλάξτε το αρχείο σε ασφαλή τοποθεσία
+          <i class="fa-solid fa-lock"></i> Τα δεδομένα αποθηκεύονται χωρίς κρυπτογράφηση. Φυλάξτε το αρχείο σε ασφαλή τοποθεσία
           και μην το μοιράζεστε χωρίς λόγο.
         </div>
       </div>
@@ -1123,8 +1123,8 @@ const Views = {
           <h3>Εξαγωγή Δεδομένων</h3>
         </div>
         <div class="gap-row">
-          <button class="btn btn-outline" onclick="exportMembersExcel()">📥 Μέλη → Excel</button>
-          <button class="btn btn-outline" onclick="exportPaymentsExcel()">📥 Πληρωμές → Excel</button>
+          <button class="btn btn-outline" onclick="exportMembersExcel()"><i class="fa-solid fa-file-arrow-down"></i> Μέλη → Excel</button>
+          <button class="btn btn-outline" onclick="exportPaymentsExcel()"><i class="fa-solid fa-file-arrow-down"></i> Πληρωμές → Excel</button>
         </div>
       </div>
 
@@ -1140,7 +1140,7 @@ const Views = {
         <div style="height:8px;background:var(--bg);border-radius:4px;margin-top:8px;overflow:hidden">
           <div style="height:100%;width:${Math.min(storagePercent, 100)}%;background:${storagePercent > 80 ? 'var(--danger)' : 'var(--success)'};border-radius:4px;transition:width 0.3s"></div>
         </div>
-        ${storagePercent > 80 ? '<div class="alert alert-warning mt-1">⚠️ Ο αποθηκευτικός χώρος πλησιάζει το όριο</div>' : ''}
+        ${storagePercent > 80 ? '<div class="alert alert-warning mt-1"><i class="fa-solid fa-triangle-exclamation"></i> Ο αποθηκευτικός χώρος πλησιάζει το όριο</div>' : ''}
         <div class="info-row mt-1">
           <span class="info-label">Μέλη:</span>
           <span class="info-value">${Store.getMembers().length}</span>

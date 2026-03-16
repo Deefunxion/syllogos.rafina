@@ -20,8 +20,8 @@ function openMemberForm(memberId = null) {
     </div>
     <div class="modal-body">
       <div class="tabs" id="member-form-tabs">
-        <button class="tab active" onclick="switchMemberTab('parent')">👤 Γονιός / Μέλος</button>
-        <button class="tab" onclick="switchMemberTab('child')">🧒 Αθλούμενος</button>
+        <button class="tab active" onclick="switchMemberTab('parent')"><i class="fa-solid fa-user"></i> Γονιός / Μέλος</button>
+        <button class="tab" onclick="switchMemberTab('child')"><i class="fa-solid fa-child"></i> Αθλούμενος</button>
       </div>
 
       <form id="member-form" onsubmit="saveMember(event, '${memberId || ''}')">
@@ -323,7 +323,7 @@ function openPaymentForm(memberId = null, preMonth = null, preYear = null) {
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="Modals.close()">Ακύρωση</button>
       <button class="btn btn-success" onclick="document.getElementById('payment-form').requestSubmit()">
-        💶 Καταχώρηση
+        <i class="fa-solid fa-coins"></i> Καταχώρηση
       </button>
     </div>
   `);

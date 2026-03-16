@@ -108,8 +108,8 @@ function showPaymentDetail(paymentId) {
       ${p.notes ? `<div class="info-row"><span class="info-label">Σημειώσεις:</span><span class="info-value">${Utils.escapeHtml(p.notes)}</span></div>` : ''}
     </div>
     <div class="modal-footer">
-      ${p.receiptId ? `<button class="btn btn-outline btn-sm" onclick="Modals.close(); showReceiptById('${p.receiptId}')">🧾 Απόδειξη</button>` : ''}
-      ${!isCancelled && receipt ? `<button class="btn btn-danger btn-sm" onclick="Modals.close(); cancelReceipt('${receipt.id}')">❌ Ακύρωση</button>` : ''}
+      ${p.receiptId ? `<button class="btn btn-outline btn-sm" onclick="Modals.close(); showReceiptById('${p.receiptId}')"><i class="fa-solid fa-receipt"></i> Απόδειξη</button>` : ''}
+      ${!isCancelled && receipt ? `<button class="btn btn-danger btn-sm" onclick="Modals.close(); cancelReceipt('${receipt.id}')"><i class="fa-solid fa-ban"></i> Ακύρωση</button>` : ''}
       <button class="btn btn-outline" onclick="Modals.close()">Κλείσιμο</button>
     </div>
   `);
@@ -132,7 +132,7 @@ function showReceiptById(receiptId) {
 
   Modals.open(`
     <div class="modal-header">
-      <h3>🧾 Αποδεικτικό Πληρωμής</h3>
+      <h3><i class="fa-solid fa-receipt"></i> Αποδεικτικό Πληρωμής</h3>
       <button class="modal-close" onclick="Modals.close(); renderView()">&times;</button>
     </div>
     <div class="modal-body" id="receipt-content">
@@ -192,7 +192,7 @@ function showReceiptById(receiptId) {
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-primary" onclick="printReceipt()">🖨️ Εκτύπωση</button>
+      <button class="btn btn-primary" onclick="printReceipt()"><i class="fa-solid fa-print"></i> Εκτύπωση</button>
       <button class="btn btn-outline" onclick="Modals.close(); renderView()">Κλείσιμο</button>
     </div>
   `, true);
@@ -214,20 +214,20 @@ function printReceipt() {
   const config = Store.getConfig();
   printWin.document.write(`
     <html><head><title>Απόδειξη - ${Utils.escapeHtml(config.clubName)}</title>
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
-      body { font-family: 'IBM Plex Sans', sans-serif; margin: 20px; }
-      .receipt { border: 2px solid #1a3a5c; border-radius: 8px; padding: 32px; max-width: 500px; margin: 0 auto; }
-      .receipt-header { text-align: center; border-bottom: 2px solid #1a3a5c; padding-bottom: 16px; margin-bottom: 20px; }
-      .receipt-club { font-size: 1.2rem; font-weight: 700; color: #1a3a5c; margin-bottom: 4px; }
+      body { font-family: 'Inter Tight', sans-serif; margin: 20px; }
+      .receipt { border: 2px solid #111111; border-radius: 0; padding: 32px; max-width: 500px; margin: 0 auto; }
+      .receipt-header { text-align: center; border-bottom: 2px solid #111111; padding-bottom: 16px; margin-bottom: 20px; }
+      .receipt-club { font-size: 1.2rem; font-weight: 700; color: #111111; margin-bottom: 4px; }
       .receipt-title { font-size: 1rem; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; }
-      .receipt-number { text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 1.3rem; font-weight: 700; color: #1a3a5c; margin-bottom: 16px; }
+      .receipt-number { text-align: right; font-family: 'JetBrains Mono', monospace; font-size: 1.3rem; font-weight: 700; color: #111111; margin-bottom: 16px; }
       .receipt-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #ddd; font-size: 0.92rem; }
       .receipt-row:last-child { border-bottom: none; }
       .receipt-label { color: #6b7a8d; font-weight: 500; }
       .receipt-val { font-weight: 600; }
-      .receipt-val.amount { font-family: 'IBM Plex Mono', monospace; font-size: 1.1rem; color: #2d7a4f; }
-      .receipt-footer { margin-top: 24px; padding-top: 16px; border-top: 2px solid #1a3a5c; display: flex; justify-content: space-between; align-items: flex-end; }
+      .receipt-val.amount { font-family: 'JetBrains Mono', monospace; font-size: 1.1rem; color: #2d7a4f; }
+      .receipt-footer { margin-top: 24px; padding-top: 16px; border-top: 2px solid #111111; display: flex; justify-content: space-between; align-items: flex-end; }
       .receipt-stamp { text-align: center; font-size: 0.8rem; color: #6b7a8d; }
       .stamp-line { display: block; width: 140px; border-top: 1px solid #333; margin-top: 40px; padding-top: 4px; }
       .receipt-cancelled { opacity: 0.7; position: relative; }
@@ -325,7 +325,7 @@ function showMemberHistoryReport(memberId) {
           </tbody>
         </table>
       </div>
-      <button class="btn btn-outline btn-sm mt-1 no-print" onclick="window.print()">🖨️ Εκτύπωση</button>
+      <button class="btn btn-outline btn-sm mt-1 no-print" onclick="window.print()"><i class="fa-solid fa-print"></i> Εκτύπωση</button>
     `}
   `;
 }
@@ -553,7 +553,7 @@ function showFileConnectModal() {
 
   Modals.open(`
     <div class="modal-header">
-      <h3>📁 Σύνδεση Αρχείου Δεδομένων</h3>
+      <h3><i class="fa-solid fa-hard-drive"></i> Σύνδεση Αρχείου Δεδομένων</h3>
       <button class="modal-close" onclick="Modals.close()">&times;</button>
     </div>
     <div class="modal-body">
@@ -564,7 +564,7 @@ function showFileConnectModal() {
 
       ${hasPending ? `
         <button class="welcome-action-btn" style="width:100%;margin-bottom:12px;border-color:var(--accent)" onclick="reconnectPendingFile()">
-          <span class="wab-icon">🔄</span>
+          <span class="wab-icon"><i class="fa-solid fa-rotate"></i></span>
           <span class="wab-text">
             <strong>Επανασύνδεση: ${Utils.escapeHtml(pendingName)}</strong>
             <span>Συνέχεια με το τελευταίο αρχείο</span>
@@ -574,14 +574,14 @@ function showFileConnectModal() {
 
       <div class="welcome-actions">
         <button class="welcome-action-btn" onclick="createNewFileFromModal()">
-          <span class="wab-icon">📄</span>
+          <span class="wab-icon"><i class="fa-solid fa-file"></i></span>
           <span class="wab-text">
             <strong>Δημιουργία Νέου Αρχείου</strong>
             <span>Ξεκινήστε από την αρχή με κενή βάση</span>
           </span>
         </button>
         <button class="welcome-action-btn" onclick="openExistingFileFromModal()">
-          <span class="wab-icon">📂</span>
+          <span class="wab-icon"><i class="fa-solid fa-folder-open"></i></span>
           <span class="wab-text">
             <strong>Άνοιγμα Υπάρχοντος Αρχείου</strong>
             <span>Φόρτωση δεδομένων από αρχείο .json</span>
@@ -591,7 +591,7 @@ function showFileConnectModal() {
 
       ${!FileStorage.isSupported() ? `
         <div class="alert alert-danger mt-2">
-          ⚠️ Ο browser σας δεν υποστηρίζει File System API.<br>
+          <i class="fa-solid fa-triangle-exclamation"></i> Ο browser σας δεν υποστηρίζει File System API.<br>
           Χρησιμοποιήστε <strong>Google Chrome</strong> ή <strong>Microsoft Edge</strong> για αυτόματη αποθήκευση σε αρχείο.
           <br><br>Εναλλακτικά, τα δεδομένα θα αποθηκευτούν στον browser (localStorage) — 
           χρησιμοποιήστε τακτικά Backup.

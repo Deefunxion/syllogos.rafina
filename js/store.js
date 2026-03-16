@@ -282,19 +282,19 @@ const FileStorage = {
       // Already connected — show options
       Modals.open(`
         <div class="modal-header">
-          <h3>📁 Αρχείο Δεδομένων</h3>
+          <h3><i class="fa-solid fa-hard-drive"></i> Αρχείο Δεδομένων</h3>
           <button class="modal-close" onclick="Modals.close()">&times;</button>
         </div>
         <div class="modal-body">
           <div class="alert alert-success">
-            ✓ Συνδεδεμένο: <strong>${Utils.escapeHtml(this.fileName)}</strong>
+            <i class="fa-solid fa-check"></i> Συνδεδεμένο: <strong>${Utils.escapeHtml(this.fileName)}</strong>
           </div>
           <p class="text-muted mb-2" style="font-size:0.88rem">
             Τα δεδομένα αποθηκεύονται αυτόματα σε αυτό το αρχείο μετά από κάθε αλλαγή.
           </p>
           <div class="gap-row">
-            <button class="btn btn-primary" onclick="FileStorage.saveNow(); Modals.close()">💾 Αποθήκευση Τώρα</button>
-            <button class="btn btn-outline" onclick="Modals.close(); FileStorage.switchFile()">📂 Αλλαγή Αρχείου</button>
+            <button class="btn btn-primary" onclick="FileStorage.saveNow(); Modals.close()"><i class="fa-solid fa-floppy-disk"></i> Αποθήκευση Τώρα</button>
+            <button class="btn btn-outline" onclick="Modals.close(); FileStorage.switchFile()"><i class="fa-solid fa-folder-open"></i> Αλλαγή Αρχείου</button>
             <button class="btn btn-danger btn-sm" onclick="FileStorage.disconnect(); Modals.close(); renderView()">Αποσύνδεση</button>
           </div>
         </div>
@@ -320,7 +320,7 @@ const FileStorage = {
 
     if (connected && this.fileHandle) {
       dot.className = 'file-status-dot connected';
-      text.innerHTML = `<strong>📁 ${Utils.escapeHtml(this.fileName)}</strong>Αυτόματη αποθήκευση`;
+      text.innerHTML = `<strong><i class="fa-solid fa-hard-drive"></i> ${Utils.escapeHtml(this.fileName)}</strong>Αυτόματη αποθήκευση`;
     } else {
       dot.className = 'file-status-dot disconnected';
       text.innerHTML = `<strong>Χωρίς αρχείο</strong>Κλικ για σύνδεση`;
@@ -332,12 +332,12 @@ const FileStorage = {
     if (!el) return;
     el.className = `autosave-indicator show ${state}`;
     if (state === 'saving') {
-      el.textContent = '⏳ Αποθήκευση...';
+      el.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Αποθήκευση...';
     } else if (state === 'saved') {
-      el.textContent = '✓ Αποθηκεύτηκε';
+      el.innerHTML = '<i class="fa-solid fa-check"></i> Αποθηκεύτηκε';
       setTimeout(() => el.classList.remove('show'), 2000);
     } else if (state === 'error') {
-      el.textContent = '✗ Σφάλμα αποθήκευσης';
+      el.innerHTML = '<i class="fa-solid fa-xmark"></i> Σφάλμα αποθήκευσης';
       setTimeout(() => el.classList.remove('show'), 4000);
     }
   },

@@ -131,7 +131,7 @@ async function init() {
         const banner = document.createElement('div');
         banner.className = 'alert alert-warning mb-2 no-print';
         banner.style.cursor = 'pointer';
-        banner.innerHTML = '🌐 <strong>Για βέλτιστη λειτουργία χρησιμοποιήστε Google Chrome ή Microsoft Edge.</strong> Ο τρέχων browser δεν υποστηρίζει αυτόματη αποθήκευση σε αρχείο.';
+        banner.innerHTML = '<i class="fa-solid fa-globe"></i> <strong>Για βέλτιστη λειτουργία χρησιμοποιήστε Google Chrome ή Microsoft Edge.</strong> Ο τρέχων browser δεν υποστηρίζει αυτόματη αποθήκευση σε αρχείο.';
         banner.onclick = () => banner.remove();
         main.insertBefore(banner, main.firstChild);
       }
