@@ -432,12 +432,18 @@ function exportReceiptsExcel(year) {
 
 function exportAnnualGrid(year) {
   if (!checkSheetJS()) return;
+  const config = Store.getConfig();
+  const activeMonths = config.activeMonths || [9,10,11,12,1,2,3,4,5,6];
   const members = Store.getMembers().filter(m => m.status === 'active').sort((a,b) => a.lastName.localeCompare(b.lastName, 'el'));
 
   const data = members.map(m => {
     const row = { 'Μέλος': Utils.getMemberFullName(m) };
     let rowTotal = 0;
     for (let mo = 1; mo <= 12; mo++) {
+      if (!activeMonths.includes(mo)) {
+        row[MONTHS_SHORT[mo-1]] = '—';
+        continue;
+      }
       const payment = Utils.isMemberPaidForMonth(m.id, year, mo);
       const shouldPay = Utils.memberShouldPay(m, mo, year);
       if (payment) {

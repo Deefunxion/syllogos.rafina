@@ -506,6 +506,8 @@ const Views = {
   _paymentsMonthly() {
     const year = State.currentYear;
     const month = State.currentMonth;
+    const config = Store.getConfig();
+    const activeMonths = config.activeMonths || [9,10,11,12,1,2,3,4,5,6];
     const members = Store.getMembers().filter(m => m.status === 'active').sort((a,b) => a.lastName.localeCompare(b.lastName, 'el'));
     const payments = Store.getPayments();
 
@@ -528,7 +530,10 @@ const Views = {
           <button onclick="State.currentYear++; renderView()">▸</button>
         </div>
         <select class="filter-select" onchange="State.currentMonth = parseInt(this.value); renderView()">
-          ${MONTHS_GR.map((mn, i) => `<option value="${i+1}" ${month === i+1 ? 'selected' : ''}>${mn}</option>`).join('')}
+          ${MONTHS_GR.map((mn, i) => {
+            const isActive = activeMonths.includes(i+1);
+            return `<option value="${i+1}" ${month === i+1 ? 'selected' : ''}${!isActive ? ' style="color:#ccc"' : ''}>${mn}${!isActive ? ' (ανενεργός)' : ''}</option>`;
+          }).join('')}
         </select>
       </div>
 
@@ -590,6 +595,8 @@ const Views = {
 
   _paymentsAnnual() {
     const year = State.currentYear;
+    const config = Store.getConfig();
+    const activeMonths = config.activeMonths || [9,10,11,12,1,2,3,4,5,6];
     const members = Store.getMembers().filter(m => m.status === 'active').sort((a,b) => a.lastName.localeCompare(b.lastName, 'el'));
 
     let monthTotals = new Array(12).fill(0);
@@ -598,6 +605,10 @@ const Views = {
       const cols = [];
       let rowTotal = 0;
       for (let mo = 1; mo <= 12; mo++) {
+        if (!activeMonths.includes(mo)) {
+          cols.push({ inactive: true });
+          continue;
+        }
         const payment = Utils.isMemberPaidForMonth(m.id, year, mo);
         const shouldPay = Utils.memberShouldPay(m, mo, year);
         if (payment) {
@@ -631,7 +642,7 @@ const Views = {
             <thead>
               <tr>
                 <th>Μέλος</th>
-                ${MONTHS_SHORT.map(m => `<th>${m}</th>`).join('')}
+                ${MONTHS_SHORT.map((m, i) => `<th${!activeMonths.includes(i+1) ? ' style="opacity:0.3"' : ''}>${m}</th>`).join('')}
                 <th>Σύνολο</th>
               </tr>
             </thead>
@@ -640,6 +651,7 @@ const Views = {
                 <tr class="clickable-row" onclick="navigate('memberDetail',{memberId:'${r.member.id}'})">
                   <td><strong>${Utils.escapeHtml(Utils.getMemberFullName(r.member))}</strong></td>
                   ${r.cols.map(c => {
+                    if (c.inactive) return '<td class="month-cell-na" style="background:#f0f0f0;opacity:0.3">—</td>';
                     if (c.na) return '<td class="month-cell-na">—</td>';
                     if (c.paid) return `<td class="month-cell-paid" title="${Utils.formatMoney(c.amount)}">✓</td>`;
                     return '<td class="month-cell-unpaid">✗</td>';
@@ -651,7 +663,7 @@ const Views = {
             <tfoot>
               <tr style="font-weight:700;background:var(--bg)">
                 <td>Σύνολα</td>
-                ${monthTotals.map(t => `<td class="text-center money">${t > 0 ? Utils.formatMoney(t) : '—'}</td>`).join('')}
+                ${monthTotals.map((t, i) => `<td class="text-center money"${!activeMonths.includes(i+1) ? ' style="opacity:0.3"' : ''}>${t > 0 ? Utils.formatMoney(t) : '—'}</td>`).join('')}
                 <td class="text-right money">${Utils.formatMoney(grandTotal)}</td>
               </tr>
             </tfoot>
